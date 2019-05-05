@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Provides an API for postgres database maintenance tasks.
-
-This API creates and drops postgres users and databases used by the
-``verdi quicksetup`` commandline tool. It allows convenient access to this
-functionality from within python without knowing details about how postgres is
-installed by default on various systems. If the postgres setup is not the
-default installation, additional information needs to be provided.
+"""Connect to an existing PostgreSQL cluster as the `postgres` superuser and execute SQL commands.
 """
 from __future__ import division
 from __future__ import print_function
@@ -38,34 +32,19 @@ class PostgresConnectionMode(IntEnum):
 
 class Postgres(object):  # pylint: disable=useless-object-inheritance
     """
-    Provides postgres database manipulation assuming no prior setup
-
-    * Can be used to create the initial aiida database and database user.
-    * Works in every reasonable environment, provided the user can sudo
+    Connect to an existing PostgreSQL cluster as the `postgres` superuser and execute SQL commands.
 
     Tries to use psycopg2 with a fallback to psql subcommands (using ``sudo su`` to run as postgres user).
-
-    :param port: (str) Assume the database server runs on this port
-    :param interactive: (bool) Allow prompting the user for information
-        Will also be passed to ``sudo`` (if using ``psycopg2`` fails) and to
-        the callback that can be set to be called when automatic setup detection fails
-    :param quiet: (bool) Suppress messages
 
     Simple Example::
 
         postgres = Postgres()
-        postgres.determine_setup()
-        postgres.create_dbuser('username', 'password')
-        if not postgres.db_exists('dbname'):
-            postgres.create_db('username', 'dbname')
+        postgres.execute("CREATE USER testuser PASSWORD 'testpw'")
 
     Complex Example::
 
         postgres = Postgres(interactive=True, dbinfo={'port': 5433})
-        postgres.setup_fail_callback = prompt_db_info
-        postgres.determine_setup()
-        if postgres.execute:
-            print('setup sucessful!')
+        postgres.execute("CREATE USER testuser PASSWORD 'testpw'")
 
     Note: In postgresql
      * you cannot drop databases you are currently connected to
@@ -88,15 +67,15 @@ class Postgres(object):  # pylint: disable=useless-object-inheritance
         """
         self.interactive = interactive
         self.quiet = quiet
-        self._pg_connection_mode = PostgresConnectionMode.DISCONNECTED
+        self.connection_mode = PostgresConnectionMode.DISCONNECTED
         self.setup_fail_callback = prompt_db_info
         self.setup_fail_counter = 0
         self.setup_max_tries = 1
 
         if dbinfo is None:
-            self._dbinfo = DEFAULT_DBINFO
+            self.dbinfo = DEFAULT_DBINFO
         else:
-            self._dbinfo = dbinfo
+            self.dbinfo = dbinfo
 
         if determine_setup:
             self.determine_setup()
@@ -107,12 +86,12 @@ class Postgres(object):  # pylint: disable=useless-object-inheritance
         :param command: A psql command line as a str
         :param kwargs: will be forwarded to _execute_... function
         """
-        kw_copy = self.get_dbinfo()
+        kw_copy = self.dbinfo.copy()
         kw_copy.update(kwargs)
 
-        if self._pg_connection_mode == PostgresConnectionMode.PSYCOPG:  # pylint: disable=no-else-return
+        if self.connection_mode == PostgresConnectionMode.PSYCOPG:  # pylint: disable=no-else-return
             return _execute_psyco(command, **kw_copy)
-        elif self._pg_connection_mode == PostgresConnectionMode.PSQL:
+        elif self.connection_mode == PostgresConnectionMode.PSQL:
             return _execute_sh(command, **kw_copy)
 
         raise ValueError('Could not connect to postgres.')
@@ -121,16 +100,9 @@ class Postgres(object):  # pylint: disable=useless-object-inheritance
         """
         Set a callback to be called when setup cannot be determined automatically
 
-        :param callback: a callable with signature ``callback(interactive, dbinfo)``
+        :param callback: a callable with signature ``callback(dbinfo)``
         """
         self.setup_fail_callback = callback
-
-    def set_dbinfo(self, dbinfo):
-        """Set the dbinfo manually"""
-        self._dbinfo = dbinfo
-
-    def get_dbinfo(self):
-        return self._dbinfo.copy()
 
     def determine_setup(self):
         """ Find out how postgres can be accessed.
@@ -144,15 +116,15 @@ class Postgres(object):  # pylint: disable=useless-object-inheritance
         """
         # find out if we run as a postgres superuser or can connect as postgres
         # This will work on OSX in some setups but not in the default Debian one
-        dbinfo = self._dbinfo.copy()
+        dbinfo = self.dbinfo.copy()
 
         pg_users = [dbinfo['user']
                     ] if dbinfo['user'] is not None else [None, 'postgres']
         for pg_user in pg_users:
             dbinfo['user'] = pg_user
             if _try_connect_psycopg(**dbinfo):
-                self._dbinfo = dbinfo
-                self._pg_connection_mode = PostgresConnectionMode.PSYCOPG
+                self.dbinfo = dbinfo
+                self.connection_mode = PostgresConnectionMode.PSYCOPG
                 return True
 
         # This will work for the default Debian postgres setup, assuming that sudo is available to the user
@@ -161,8 +133,8 @@ class Postgres(object):  # pylint: disable=useless-object-inheritance
             dbinfo['user'] = 'postgres'
             if _try_subcmd(non_interactive=bool(not self.interactive),
                            **dbinfo):
-                self._dbinfo = dbinfo
-                self._pg_connection_mode = PostgresConnectionMode.PSQL
+                self.dbinfo = dbinfo
+                self.connection_mode = PostgresConnectionMode.PSQL
                 return True
         elif not self.quiet:
             click.echo(
@@ -173,17 +145,6 @@ class Postgres(object):  # pylint: disable=useless-object-inheritance
         self._no_setup_detected()
         return False
 
-
-#    def create_db(self, dbuser, dbname):
-#        """
-#        Create a database in postgres
-#
-#        :param dbuser: (str), Name of the user which should own the db.
-#        :param dbname: (str), Name of the database.
-#        """
-#        self.execute(_CREATE_DB_COMMAND.format(dbname, dbuser), **self._dbinfo)
-#        self.execute(_GRANT_PRIV_COMMAND.format(dbname, dbuser), **self._dbinfo)
-
     def _no_setup_detected(self):
         """Print a warning message and calls the failed setup callback"""
         message = '\n'.join([
@@ -192,7 +153,7 @@ class Postgres(object):  # pylint: disable=useless-object-inheritance
         if not self.quiet:
             click.echo(message)
         if self.interactive and self.setup_fail_callback and self.setup_fail_counter <= self.setup_max_tries:
-            self._dbinfo = self.setup_fail_callback(self._dbinfo)
+            self.dbinfo = self.setup_fail_callback(self.dbinfo)
             self.determine_setup()
 
 

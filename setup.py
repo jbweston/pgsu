@@ -19,7 +19,7 @@ setup(
         "enum34; python_version<'3.5'",
     ],
     extras_require={
-        'testing': ['pytest'],
+        'testing': ['pytest', 'pgtest'],
         # note: pre-commit hooks require python3
         "pre-commit": [
             "pre-commit==1.11.0", "yapf==0.27.0", "prospector==1.1.6.2",
