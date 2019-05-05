@@ -1,5 +1,5 @@
 # encoding: utf-8
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='pgsu',
@@ -9,12 +9,12 @@ setup(
     author='AiiDA Team',
     author_email='aiidateam@gmail.com',
     license='MIT',
-    packages=['pgtest'],
+    packages=find_packages(),
     install_requires = [
         'psycopg2',
         'click',
     ],
     extras_require = {
-        'test': ['pytest'],
+        'testing': ['pytest'],
     }
 )
