@@ -14,7 +14,7 @@ setup(
     license='MIT',
     packages=find_packages(),
     install_requires=[
-        'psycopg2',
+        'psycopg2-binary>=2.8',
         'click',
         "enum34; python_version<'3.5'",
     ],

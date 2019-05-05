@@ -15,7 +15,15 @@ Use this module e.g. to create databases and database users from a command line 
 ```python
 from pgsu import Postgres
 postgres = Postgres()  # this may prompt for sudo password
-postgres.execute('CREATE USER "newuser" WITH PASSWORD \'newpassword\'')
+postgres.execute("CREATE USER newuser WITH PASSWORD 'newpassword'")
 users = postgres.execute("SELECT usename FROM pg_user WHERE usename='newuser'")
 print(users)
+```
+
+## Tests
+
+Run the tests as follows:
+````bash
+pip install -e .[testing]
+pytest
 ```
