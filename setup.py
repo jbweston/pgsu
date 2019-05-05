@@ -13,6 +13,7 @@ setup(
     install_requires = [
         'psycopg2',
         'click',
+        "enum34; python_version<'3.5'",
     ],
     extras_require = {
         'testing': ['pytest'],
