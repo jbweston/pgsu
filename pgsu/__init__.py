@@ -251,17 +251,17 @@ def _execute_psyco(command, **kwargs):
     :param command: A psql command line as a str
     :param kwargs: will be forwarded to psycopg2.connect
     """
-    from psycopg2 import connect, ProgrammingError
-    conn = connect(**kwargs)
-    conn.autocommit = True
+    import psycopg2
+
     output = None
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(command)
-            try:
-                output = cur.fetchall()
-            except ProgrammingError:
-                pass
+    with psycopg2.connect(**kwargs) as conn:
+        conn.autocommit = True
+        with conn.cursor() as cursor:
+            cursor.execute(command)
+            if cursor.description is not None:
+                output = cursor.fetchall()
+
+    # see http://initd.org/psycopg/docs/usage.html#with-statement
     conn.close()
     return output
 
