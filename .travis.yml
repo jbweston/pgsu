@@ -6,12 +6,5 @@ python:
 install: pip install -e .[test]
 script: pytest
 
-os:
-  - linux
-dist: trusty
-addons:
-  postgresql: "10"
-  apt:
-    packages:
-    - postgresql-10
-    - postgresql-client-10
+services:
+  - postgresql
