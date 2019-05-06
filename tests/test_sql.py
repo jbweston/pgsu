@@ -28,8 +28,11 @@ def test_grant_priv(postgres, user, database):  # pylint: disable=unused-argumen
     postgres.execute(conftest.GRANT_PRIV_COMMAND.format(database, user))
 
     # connect as new user
-    dbinfo = postgres.dbinfo.copy()
-    dbinfo['user'] = user
-    dbinfo['database'] = database
+    dbinfo = {
+        'host': postgres.dbinfo['host'] or 'localhost',
+        'port': postgres.dbinfo['port'],
+        'user': user,
+        'database': database,
+    }
     conn = psycopg2.connect(**dbinfo)
     conn.close()
