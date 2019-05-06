@@ -32,6 +32,7 @@ def test_grant_priv(postgres, user, database):  # pylint: disable=unused-argumen
         'host': postgres.dbinfo['host'] or 'localhost',
         'port': postgres.dbinfo['port'],
         'user': user,
+        'password': conftest.DEFAULT_PASSWORD,
         'database': database,
     }
     conn = psycopg2.connect(**dbinfo)
