@@ -253,6 +253,13 @@ def _execute_psyco(command, **kwargs):
     """
     import psycopg2
 
+    # Note: Ubuntu 18.04 uses "peer" as the default postgres configuration
+    # which allows connections only when the unix user matches the database user.
+    # This restriction no longer applies for IPv4/v6-based connection,
+    # when specifying host=localhost.
+    if kwargs.get('host') is None:
+        kwargs['host'] = 'localhost'
+
     output = None
     with psycopg2.connect(**kwargs) as conn:
         conn.autocommit = True
