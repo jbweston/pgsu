@@ -7,8 +7,8 @@ import conftest
 
 #def test_execute_psql(postgres):  # pylint: disable=unused-argument
 #    """Execute command using PSQL."""
-#    from pgsu import PostgresConnectionMode
-#    postgres.connection_mode = PostgresConnectionMode.PSQL
+#    from pgsu import PGSUConnectionMode
+#    postgres.connection_mode = PGSUConnectionMode.PSQL
 #    postgres.execute('BAD CMD')
 
 

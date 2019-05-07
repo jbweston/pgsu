@@ -13,8 +13,8 @@ Use this module e.g. to create databases and database users from a command line 
 ## Usage
 
 ```python
-from pgsu import Postgres
-postgres = Postgres()  # this may prompt for sudo password
+from pgsu import PGSU
+postgres = PGSU()  # this may prompt for sudo password
 postgres.execute("CREATE USER newuser WITH PASSWORD 'newpassword'")
 users = postgres.execute("SELECT usename FROM pg_user WHERE usename='newuser'")
 print(users)

@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 import pytest
-from pgsu import Postgres
+from pgsu import PGSU
 
 CREATE_USER_COMMAND = 'CREATE USER "{}" WITH PASSWORD \'{}\''
 DROP_USER_COMMAND = 'DROP USER "{}"'
@@ -20,7 +20,7 @@ DEFAULT_DB = 'newdb'
 
 @pytest.fixture
 def postgres():
-    return Postgres()
+    return PGSU()
 
 
 @pytest.fixture
