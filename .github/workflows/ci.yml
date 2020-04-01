@@ -1,0 +1,110 @@
+name: ci
+
+on: [push, pull_request]
+
+jobs:
+
+  pre-commit:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Install system dependencies
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/dotnetdev.list /etc/apt/sources.list.d/microsoft-prod.list
+        sudo apt update
+        sudo apt install libkrb5-dev ruby ruby-dev
+
+    - name: Install python dependencies
+      run: |
+        pip install -e .[pre-commit,testing]
+        pip freeze
+
+    - name: Run pre-commit
+      run:
+        pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
+
+  ubuntu-passwordless:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    strategy:
+      matrix:
+        python-version: [2.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    # - uses: CasperWA/postgresql-action@v1.2
+    #   with:
+    #     postgresql version: '10'
+    #     postgresql db: test_db
+    #     postgresql user: postgres
+    #     postgresql password: ''
+    #     postgresql auth: trust
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install system dependencies
+      run: |
+        sudo rm -f /etc/apt/sources.list.d/dotnetdev.list /etc/apt/sources.list.d/microsoft-prod.list
+        sudo apt update
+        sudo apt install postgresql-10
+
+    - name: Install pgsu
+      run: |
+        pip install -e .[testing]
+        pip freeze
+
+    - name: Run test suite
+      run: |
+        pytest
+
+
+  ubuntu-password:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    strategy:
+      matrix:
+        python-version: [3.8]
+        postgres-pw: ["testpw"]
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: CasperWA/postgresql-action@v1.2
+      with:
+        postgresql version: '10'
+        postgresql db: test_db
+        postgresql user: postgres
+        postgresql password: ${{ matrix.postgres-pw}}
+        #postgresql auth: trust
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install pgsu
+      run: |
+        pip install -e .[testing]
+        pip freeze
+
+    - name: Run test suite
+      env:
+        PGSU_TEST_PASSWORD: ${{ matrix.postgres-pw}}
+      run: |
+        pytest
+

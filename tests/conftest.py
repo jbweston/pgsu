@@ -1,6 +1,10 @@
 from __future__ import absolute_import
+import sys
 import pytest
-from pgsu import Postgres
+from pgsu import PGSU
+from contextlib import contextmanager
+import os
+from io import StringIO
 
 CREATE_USER_COMMAND = 'CREATE USER "{}" WITH PASSWORD \'{}\''
 DROP_USER_COMMAND = 'DROP USER "{}"'
@@ -18,9 +22,34 @@ DEFAULT_PASSWORD = 'newpassword'  # noqa
 DEFAULT_DB = 'newdb'
 
 
+@contextmanager
+def enter_password():
+    """Replace standard input with password.
+
+    See https://stackoverflow.com/a/36491341/1069467
+    """
+    pgsu_pw = os.getenv("PGSU_TEST_PASSWORD")
+    if not pgsu_pw:
+        yield
+    else:
+        orig = sys.stdin
+        sys.stdin = StringIO(pgsu_pw + '\n')
+        yield
+        sys.stdin = orig
+
+
 @pytest.fixture
 def postgres():
-    return Postgres()
+    with enter_password():
+
+        dsn = {
+            'host': os.getenv('PGSU_TEST_HOST'),
+            'port': os.getenv('PGSU_TEST_PORT'),
+            'password': os.getenv('PGSU_TEST_PASSWORD'),
+            'user': os.getenv('PGSU_TEST_USER'),
+            'database': os.getenv('PGSU_TEST_database'),
+        }
+        return PGSU(dsn={k: v for k, v in dsn.items() if v})
 
 
 @pytest.fixture

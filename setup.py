@@ -14,15 +14,15 @@ setup(
     license='MIT',
     packages=find_packages(),
     install_requires=[
-        'psycopg2-binary>=2.8',
+        'psycopg2-binary>=2.8.3',
         'click',
         "enum34; python_version<'3.5'",
     ],
     extras_require={
-        'testing': ['pytest', 'pgtest'],
+        'testing': ['pytest', 'pgtest>=1.3.1', 'pytest-cov'],
         # note: pre-commit hooks require python3
         "pre-commit": [
-            "pre-commit==1.11.0", "yapf==0.27.0", "prospector==1.1.6.2",
-            "pylint==2.1.1"
+            "pre-commit==1.18.3", "yapf==0.28.0", "prospector==1.2.0",
+            "pylint==2.4.4"
         ]
     })

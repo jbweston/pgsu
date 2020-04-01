@@ -13,11 +13,24 @@ Use this module e.g. to create databases and database users from a command line 
 ## Usage
 
 ```python
-from pgsu import Postgres
-postgres = Postgres()  # this may prompt for sudo password
+from pgsu import PGSU
+postgres = PGSU()  # this may prompt for sudo password
 postgres.execute("CREATE USER newuser WITH PASSWORD 'newpassword'")
 users = postgres.execute("SELECT usename FROM pg_user WHERE usename='newuser'")
 print(users)
+```
+
+While the main point of the package is to *guess* the PostgreSQL setup, you can also provide partial or all information abut the setup using the `dsn` parameter.
+These are the default settings:
+```python
+from pgsu import PGSU
+postgres = PGSU(dsn={
+    'host': 'localhost',
+    'port': 5432,
+    'user': 'postgres',
+    'password': None,
+    'database': 'template1',  # Note: you cannot drop databases you are connected to
+})
 ```
 
 ## Tests
