@@ -1,17 +1,6 @@
 # -*- coding: utf-8 -*-
-###########################################################################
-# Copyright (c), The AiiDA team. All rights reserved.                     #
-# This file is part of the AiiDA code.                                    #
-#                                                                         #
-# The code is hosted on GitHub at https://github.com/aiidateam/aiida-core #
-# For further information on the license, see the LICENSE.txt file        #
-# For further information please visit http://www.aiida.net               #
-###########################################################################
 """Connect to an existing PostgreSQL cluster as the `postgres` superuser and execute SQL commands.
 
-Note: Once the API of this functionality has converged, this module should be moved out of aiida-core and into a
-  separate package that can then be tested on multiple OS / postgres setups. Therefore, **please keep this
-  module entirely AiiDA-agnostic**.
 """
 
 from __future__ import absolute_import
@@ -53,13 +42,13 @@ class PGSU:
 
     Simple Example::
 
-        postgres = PGSU()
-        postgres.execute("CREATE USER testuser PASSWORD 'testpw'")
+        pgsu = PGSU()
+        pgsu.execute("CREATE USER testuser PASSWORD 'testpw'")
 
     Complex Example::
 
-        postgres = PGSU(interactive=True, dsn={'port': 5433})
-        postgres.execute("CREATE USER testuser PASSWORD 'testpw'")
+        pgsu = PGSU(interactive=True, dsn={'port': 5433})
+        pgsu.execute("CREATE USER testuser PASSWORD 'testpw'")
 
     Note: In PostgreSQL
      * you cannot drop databases you are currently connected to
@@ -109,7 +98,11 @@ class PGSU:
         elif self.connection_mode == PostgresConnectionMode.PSQL:
             return _execute_psql(command, **kw_copy)
 
-        raise ValueError('Could not connect to postgres.')
+        raise ConnectionError(
+            'Could not connect to PostgreSQL server using dsn={}.\n'.format(
+                kw_copy) +
+            'Consider providing non-standard connection parameters via PGSU(dsn=...).'
+        )
 
     def set_setup_fail_callback(self, callback):
         """

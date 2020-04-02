@@ -8,15 +8,20 @@ Use this module e.g. to create databases and database users from a command line 
 
  * autodetects postgres setup
  * uses [psycopg2](http://initd.org/psycopg/docs/index.html) to connect where possible
- * can use `sudo` to become the `postgres` UNIX user if necessary
-
+ * can use `sudo` to become the `postgres` UNIX user if necessary/possible
+ * tested via continuous integration on
+   * Ubuntu 18.04 & PostgreSQL installed via `apt`
+   * Ubuntu 18.04 & PostgreSQL docker container
+   * MacOS 10.15 and PostgreSQL installed via `conda`
+   * Windows 2019 and PostgreSQL installed via `conda`
+   
 ## Usage
 
 ```python
 from pgsu import PGSU
-postgres = PGSU()  # this may prompt for sudo password
-postgres.execute("CREATE USER newuser WITH PASSWORD 'newpassword'")
-users = postgres.execute("SELECT usename FROM pg_user WHERE usename='newuser'")
+pgsu = PGSU()  # this may prompt for sudo password
+pgsu.execute("CREATE USER newuser WITH PASSWORD 'newpassword'")
+users = pgsu.execute("SELECT usename FROM pg_user WHERE usename='newuser'")
 print(users)
 ```
 
@@ -24,7 +29,7 @@ While the main point of the package is to *guess* the PostgreSQL setup, you can 
 These are the default settings:
 ```python
 from pgsu import PGSU
-postgres = PGSU(dsn={
+pgsu = PGSU(dsn={
     'host': 'localhost',
     'port': 5432,
     'user': 'postgres',

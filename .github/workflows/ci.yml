@@ -62,7 +62,15 @@ jobs:
         pip freeze
 
     - name: Run test suite
-      run: pytest
+      run: pytest --cov-report xml
+
+    - name: Upload coverage report
+      if: github.repository == 'ltalirz/pgsu'
+      uses: codecov/codecov-action@v1
+      with:
+        name: ubuntu-apt
+        file: ./coverage.xml
+        fail_ci_if_error: true
 
   ubuntu-postgres-action:
     # ubuntu using postgres docker container (custom action)
@@ -98,7 +106,15 @@ jobs:
     - name: Run test suite
       env:
         PGSU_TEST_PASSWORD: ${{ matrix.postgres-pw}}
-      run: pytest
+      run: pytest --cov-report xml
+
+    - name: Upload coverage report
+      if: github.repository == 'ltalirz/pgsu'
+      uses: codecov/codecov-action@v1
+      with:
+        name: ubuntu-apt
+        file: ./coverage.xml
+        fail_ci_if_error: true
 
   ubuntu-postgres-service:
     # ubuntu using postgres docker container (service provided by github actions)
@@ -137,18 +153,63 @@ jobs:
     - name: Run test suite
       env:
         PGSU_TEST_PASSWORD: ${{ matrix.postgres-pw}}
-      run: pytest
+      run: pytest --cov-report xml
+
+    - name: Upload coverage report
+      if: github.repository == 'ltalirz/pgsu'
+      uses: codecov/codecov-action@v1
+      with:
+        name: ubuntu-postgres-service
+        file: ./coverage.xml
+        fail_ci_if_error: true
 
 
-  macos-brew:
-    # macos using postgres installed via homebrew (+pgtest)
+      #  macos-brew:
+      #    # macos using postgres installed via homebrew (+pgtest)
+      #
+      #    runs-on: macos-10.15
+      #    timeout-minutes: 5
+      #
+      #    strategy:
+      #      matrix:
+      #        python-version: [3.8]
+      #
+      #    steps:
+      #    - uses: actions/checkout@v2
+      #
+      #    - name: Set up Python ${{ matrix.python-version }}
+      #      uses: actions/setup-python@v1
+      #      with:
+      #        python-version: ${{ matrix.python-version }}
+      #
+      #    - name: Install system dependencies
+      #      run: |
+      #        brew install postgresql || brew link --overwrite postgresql
+      #
+      #    - name: Install pgsu
+      #      run: |
+      #        pip install -e .[testing]
+      #        pip freeze
+      #
+      #    # note: I tested this locally with *only* the homebrew postgres server running and it worked.
+      #    # no idea why this does not work on github actions
+      #    - name: Run test suite
+      #      run: |
+      #        brew services start postgresql
+      #        brew services list
+      #        pytest
 
-    runs-on: macos-10.15
+
+  multi-conda:
+    # windows with postgres installed via conda (+pgtest)
+
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 5
 
     strategy:
       matrix:
         python-version: [3.8]
+        os: ['macos-10.15', 'windows-2019']
 
     steps:
     - uses: actions/checkout@v2
@@ -158,48 +219,15 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install system dependencies
-      run: |
-        brew install postgresql || brew link --overwrite postgresql
-
-    - name: Install pgsu
-      run: |
-        pip install -e .[testing]
-        pip freeze
-
-    # note: I tested this locally with *only* the homebrew postgres server running and it worked.
-    # no idea why this does not work on github actions
-    - name: Run test suite
-      run: 
-        brew services start postgresql
-        brew services list
-        pytest
-
-  macos-conda:
-    # macos with postgres installed via conda (+pgtest)
-
-    runs-on: macos-10.15
-    timeout-minutes: 5
-
-    strategy:
-      matrix:
-        python-version: [3.8]
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+    - uses: goanpeca/setup-miniconda@v1
       with:
+        # auto-update-conda: true
         python-version: ${{ matrix.python-version }}
 
-    - uses: s-weigand/setup-conda@v1
-      with:
-        activate-conda: False
-
     - name: Install system dependencies
+      shell: bash -l {0}
       run: |
-        conda install -y -c conda-forge postgresql==10.5
+        conda install -y -c anaconda postgresql
         initdb -D test_db
         pg_ctl -D test_db start
 
@@ -209,38 +237,13 @@ jobs:
         pip freeze
 
     - name: Run test suite
-      run: pytest
+      run: pytest --cov-report xml
 
-
-  #windows-service:
-  #  # windows using postgres installed via homebrew (+pgtest)
-
-  #  runs-on: windows-2019
-  #  timeout-minutes: 5
-
-  #  strategy:
-  #    matrix:
-  #      python-version: [3.8]
-
-  #  steps:
-  #  - uses: actions/checkout@v2
-
-  #  - name: Set up Python ${{ matrix.python-version }}
-  #    uses: actions/setup-python@v1
-  #    with:
-  #      python-version: ${{ matrix.python-version }}
-
-  #  - name: Install system dependencies
-  #    run: |
-  #      brew install postgresql || brew link --overwrite postgresql
-  #      brew services start postgresql
-  #      brew services list
-
-  #  - name: Install pgsu
-  #    run: |
-  #      pip install -e .[testing]
-  #      pip freeze
-
-  #  - name: Run test suite
-  #    run: pytest
+    - name: Upload coverage report
+      if: github.repository == 'ltalirz/pgsu'
+      uses: codecov/codecov-action@v1
+      with:
+        name: "${{ matrix.os }}-conda"
+        file: ./coverage.xml
+        fail_ci_if_error: true
 

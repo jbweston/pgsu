@@ -17,9 +17,9 @@ def test_pgtest_compatibility():
     """
 
     with PGTest() as cluster:
-        postgres = PGSU(dsn=cluster.dsn)
+        pgsu = PGSU(dsn=cluster.dsn)
 
         # make sure we've connected to the right cluster
-        assert cluster.dsn['port'] == postgres.dsn['port']
+        assert cluster.dsn['port'] == pgsu.dsn['port']
         # we should be connecting via psycopg
-        assert postgres.connection_mode == PostgresConnectionMode.PSYCOPG
+        assert pgsu.connection_mode == PostgresConnectionMode.PSYCOPG
