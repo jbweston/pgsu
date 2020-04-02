@@ -32,7 +32,7 @@ jobs:
       run:
         pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
 
-  ubuntu-passwordless:
+  ubuntu-apt:
     # ubuntu using postgresql installed via apt (+ pgtest)
 
     runs-on: ubuntu-18.04
@@ -64,7 +64,7 @@ jobs:
     - name: Run test suite
       run: pytest
 
-  ubuntu-password:
+  ubuntu-postgres-action:
     # ubuntu using postgres docker container (custom action)
 
     runs-on: ubuntu-latest
@@ -100,7 +100,7 @@ jobs:
         PGSU_TEST_PASSWORD: ${{ matrix.postgres-pw}}
       run: pytest
 
-  ubuntu-password-service:
+  ubuntu-postgres-service:
     # ubuntu using postgres docker container (service provided by github actions)
 
     runs-on: ubuntu-latest
@@ -140,7 +140,7 @@ jobs:
       run: pytest
 
 
-  macos-password-service:
+  macos-brew:
     # macos using postgres installed via homebrew (+pgtest)
 
     runs-on: macos-10.15
@@ -161,8 +161,47 @@ jobs:
     - name: Install system dependencies
       run: |
         brew install postgresql || brew link --overwrite postgresql
+
+    - name: Install pgsu
+      run: |
+        pip install -e .[testing]
+        pip freeze
+
+    # note: I tested this locally with *only* the homebrew postgres server running and it worked.
+    # no idea why this does not work on github actions
+    - name: Run test suite
+      run: 
         brew services start postgresql
         brew services list
+        pytest
+
+  macos-conda:
+    # macos with postgres installed via conda (+pgtest)
+
+    runs-on: macos-10.15
+    timeout-minutes: 5
+
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - uses: s-weigand/setup-conda@v1
+      with:
+        activate-conda: False
+
+    - name: Install system dependencies
+      run: |
+        conda install -y -c conda-forge postgresql==10.5
+        initdb -D test_db
+        pg_ctl -D test_db start
 
     - name: Install pgsu
       run: |
@@ -171,4 +210,37 @@ jobs:
 
     - name: Run test suite
       run: pytest
+
+
+  #windows-service:
+  #  # windows using postgres installed via homebrew (+pgtest)
+
+  #  runs-on: windows-2019
+  #  timeout-minutes: 5
+
+  #  strategy:
+  #    matrix:
+  #      python-version: [3.8]
+
+  #  steps:
+  #  - uses: actions/checkout@v2
+
+  #  - name: Set up Python ${{ matrix.python-version }}
+  #    uses: actions/setup-python@v1
+  #    with:
+  #      python-version: ${{ matrix.python-version }}
+
+  #  - name: Install system dependencies
+  #    run: |
+  #      brew install postgresql || brew link --overwrite postgresql
+  #      brew services start postgresql
+  #      brew services list
+
+  #  - name: Install pgsu
+  #    run: |
+  #      pip install -e .[testing]
+  #      pip freeze
+
+  #  - name: Run test suite
+  #    run: pytest
 

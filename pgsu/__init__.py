@@ -15,7 +15,6 @@ Note: Once the API of this functionality has converged, this module should be mo
 """
 
 from __future__ import absolute_import
-import getpass
 import logging
 import traceback
 
@@ -139,8 +138,7 @@ class PGSU:
 
         # First try the user specified (by default: 'postgres')
         # Then try not specifying a user
-        # Finally, try specifying the system user (homebrew)
-        for pg_user in set([dsn.get('user'), None, getpass.getuser()]):
+        for pg_user in set([dsn.get('user'), None]):
             dsn['user'] = pg_user
             if _try_connect_psycopg(**dsn):
                 self.dsn = dsn
