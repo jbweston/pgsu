@@ -16,6 +16,9 @@ Note: Once the API of this functionality has converged, this module should be mo
 
 from __future__ import absolute_import
 import getpass
+import logging
+import traceback
+
 try:
     import subprocess32 as subprocess
 except ImportError:
@@ -31,6 +34,8 @@ DEFAULT_DSN = {
     'password': None,
     'database': 'template1',
 }
+
+LOGGER = logging.getLogger('pgsu')
 
 
 class PostgresConnectionMode(IntEnum):
@@ -132,6 +137,9 @@ class PGSU:
         # This will work on OSX in some setups but not in the default Debian one
         dsn = self.dsn.copy()
 
+        # First try the user specified (by default: 'postgres')
+        # Then try not specifying a user
+        # Finally, try specifying the system user (homebrew)
         for pg_user in set([dsn.get('user'), None, getpass.getuser()]):
             dsn['user'] = pg_user
             if _try_connect_psycopg(**dsn):
@@ -234,7 +242,8 @@ def _try_connect_psycopg(**kwargs):
         success = True
         conn.close()
     except Exception:  # pylint: disable=broad-except
-        pass
+        logging.warning('Unable to connect via psycopg')
+        logging.warning(traceback.format_exc())
     return success
 
 
@@ -247,8 +256,12 @@ def _sudo_exists():
     try:
         subprocess.check_output(['sudo', '-V'])
     except subprocess.CalledProcessError:
+        logging.warning('Unable to run "sudo" in a subprocess')
+        logging.warning(traceback.format_exc())
         return False
     except OSError:
+        logging.warning('Unable to run "sudo" in a subprocess')
+        logging.warning(traceback.format_exc())
         return False
 
     return True
@@ -266,7 +279,8 @@ def _try_subcmd(**kwargs):
         _execute_psql(r'\q', **kwargs)
         success = True
     except subprocess.CalledProcessError:
-        pass
+        logging.warning('Unable to run "psql" in a subprocess')
+        logging.warning(traceback.format_exc())
     return success
 
 
