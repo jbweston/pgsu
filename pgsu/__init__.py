@@ -15,6 +15,7 @@ Note: Once the API of this functionality has converged, this module should be mo
 """
 
 from __future__ import absolute_import
+import getpass
 try:
     import subprocess32 as subprocess
 except ImportError:
@@ -131,7 +132,7 @@ class PGSU:
         # This will work on OSX in some setups but not in the default Debian one
         dsn = self.dsn.copy()
 
-        for pg_user in set([dsn.get('user'), None]):
+        for pg_user in set([dsn.get('user'), None, getpass.getuser()]):
             dsn['user'] = pg_user
             if _try_connect_psycopg(**dsn):
                 self.dsn = dsn

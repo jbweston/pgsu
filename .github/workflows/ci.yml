@@ -6,7 +6,7 @@ jobs:
 
   pre-commit:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     timeout-minutes: 5
 
     steps:
@@ -33,8 +33,9 @@ jobs:
         pre-commit run --all-files || ( git status --short ; git diff ; exit 1 )
 
   ubuntu-passwordless:
+    # ubuntu using postgresql installed via apt (+ pgtest)
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     timeout-minutes: 5
 
     strategy:
@@ -43,13 +44,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    # - uses: CasperWA/postgresql-action@v1.2
-    #   with:
-    #     postgresql version: '10'
-    #     postgresql db: test_db
-    #     postgresql user: postgres
-    #     postgresql password: ''
-    #     postgresql auth: trust
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
@@ -68,11 +62,10 @@ jobs:
         pip freeze
 
     - name: Run test suite
-      run: |
-        pytest
-
+      run: pytest
 
   ubuntu-password:
+    # ubuntu using postgres docker container (custom action)
 
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -105,6 +98,76 @@ jobs:
     - name: Run test suite
       env:
         PGSU_TEST_PASSWORD: ${{ matrix.postgres-pw}}
+      run: pytest
+
+  ubuntu-password-service:
+    # ubuntu using postgres docker container (service provided by github actions)
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    strategy:
+      matrix:
+        python-version: [3.8]
+        postgres-pw: ["testpw"]
+
+    services:
+      postgres:
+        image: postgres:10.8
+        env:
+          POSTRGRES_USER: postgres
+          POSTGRES_PASSWORD:  ${{ matrix.postgres-pw}}
+          POSTGRES_DB: test_db
+        ports:
+        - 5432:5432
+        options:  --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install pgsu
       run: |
-        pytest
+        pip install -e .[testing]
+        pip freeze
+
+    - name: Run test suite
+      env:
+        PGSU_TEST_PASSWORD: ${{ matrix.postgres-pw}}
+      run: pytest
+
+
+  macos-password-service:
+    # macos using postgres installed via homebrew (+pgtest)
+
+    runs-on: macos-10.15
+    timeout-minutes: 5
+
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install system dependencies
+      run: |
+        brew install postgresql || brew link --overwrite postgresql
+        brew services start postgresql
+
+    - name: Install pgsu
+      run: |
+        pip install -e .[testing]
+        pip freeze
+
+    - name: Run test suite
+      run: pytest
 
