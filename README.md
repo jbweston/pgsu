@@ -14,10 +14,10 @@ Use this module e.g. to create databases and database users from a command line 
  * uses [psycopg2](http://initd.org/psycopg/docs/index.html) to connect where possible
  * can use `sudo` to become the `postgres` UNIX user if necessary/possible
  * tested via continuous integration on
-   * Ubuntu 18.04 & PostgreSQL installed via `apt`
-   * Ubuntu 18.04 & PostgreSQL docker container
-   * MacOS 10.15 and PostgreSQL installed via `conda`
-   * Windows 2019 and PostgreSQL installed via `conda`
+   * [Ubuntu 18.04](https://github.com/actions/virtual-environments/blob/master/images/linux/Ubuntu1804-README.md) & PostgreSQL installed via `apt`
+   * [Ubuntu 18.04](https://github.com/actions/virtual-environments/blob/master/images/linux/Ubuntu1804-README.md) & PostgreSQL docker container
+   * [MacOS 10.15](https://github.com/actions/virtual-environments/blob/master/images/macos/macos-10.15-Readme.md) and PostgreSQL installed via `conda`
+   * [Windows Server 2019](https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md) and PostgreSQL installed via `conda`
    
 ## Usage
 
@@ -45,7 +45,7 @@ pgsu = PGSU(dsn={
 ## Tests
 
 Run the tests as follows:
-````bash
+```bash
 pip install -e .[testing]
 pytest
 ```
