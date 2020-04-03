@@ -1,3 +1,7 @@
+[![Build Status](https://github.com/ltalirz/pgsu/workflows/ci/badge.svg)](https://github.com/ltalirz/pgsu/actions)
+[![Coverage Status](https://codecov.io/gh/ltalirz/pgsu/branch/master/graph/badge.svg)](https://codecov.io/gh/ltalirz/pgsu)
+[![PyPI version](https://badge.fury.io/py/pgsu.svg)](https://badge.fury.io/py/pgsu)
+[![GitHub license](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/ltalirz/pgsu/blob/master/LICENSE)
 # pgsu
 
 Connect to an existing PostgreSQL cluster as the `postgres` superuser and execute SQL commands.
