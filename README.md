@@ -21,6 +21,7 @@ Use this module e.g. to create databases and database users from a command line 
    
 ## Usage
 
+### Python API
 ```python
 from pgsu import PGSU
 pgsu = PGSU()  # this may prompt for sudo password
@@ -40,6 +41,17 @@ pgsu = PGSU(dsn={
     'password': None,
     'database': 'template1',  # Note: you cannot drop databases you are connected to
 })
+```
+
+### Command line tool
+
+The package also comes with a very basic `pgsu` command line tool that allows users to execute PostgreSQL commands as the superuser:
+```
+$ pgsu "SELECT usename FROM pg_user"
+Trying to connect to PostgreSQL...
+Executing query: SELECT usename FROM pg_user
+[('aiida_qs_leopold',),
+ ('postgres',)]
 ```
 
 ## Tests

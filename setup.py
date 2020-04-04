@@ -25,4 +25,5 @@ setup(
             "pre-commit==1.18.3", "yapf==0.28.0", "prospector==1.2.0",
             "pylint==2.4.4"
         ]
-    })
+    },
+    entry_points={'console_scripts': ["pgsu=pgsu.cli:run"]})

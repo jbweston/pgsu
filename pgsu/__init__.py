@@ -24,6 +24,7 @@ DEFAULT_DSN = {
 }
 
 LOGGER = logging.getLogger('pgsu')
+LOGGER.setLevel(logging.ERROR)
 
 
 class PostgresConnectionMode(IntEnum):
@@ -233,8 +234,8 @@ def _try_connect_psycopg(**kwargs):
         success = True
         conn.close()
     except Exception:  # pylint: disable=broad-except
-        logging.warning('Unable to connect via psycopg')
-        logging.warning(traceback.format_exc())
+        LOGGER.warning('Unable to connect via psycopg')
+        LOGGER.warning(traceback.format_exc())
     return success
 
 
@@ -247,12 +248,12 @@ def _sudo_exists():
     try:
         subprocess.check_output(['sudo', '-V'])
     except subprocess.CalledProcessError:
-        logging.warning('Unable to run "sudo" in a subprocess')
-        logging.warning(traceback.format_exc())
+        LOGGER.warning('Unable to run "sudo" in a subprocess')
+        LOGGER.warning(traceback.format_exc())
         return False
     except OSError:
-        logging.warning('Unable to run "sudo" in a subprocess')
-        logging.warning(traceback.format_exc())
+        LOGGER.warning('Unable to run "sudo" in a subprocess')
+        LOGGER.warning(traceback.format_exc())
         return False
 
     return True
@@ -270,8 +271,8 @@ def _try_subcmd(**kwargs):
         _execute_psql(r'\q', **kwargs)
         success = True
     except subprocess.CalledProcessError:
-        logging.warning('Unable to run "psql" in a subprocess')
-        logging.warning(traceback.format_exc())
+        LOGGER.warning('Unable to run "psql" in a subprocess')
+        LOGGER.warning(traceback.format_exc())
     return success
 
 

@@ -21,8 +21,8 @@ CREATE_DB_COMMAND = \
     .format(loc=locale)
 DROP_DB_COMMAND = 'DROP DATABASE "{}"'
 GRANT_PRIV_COMMAND = 'GRANT ALL PRIVILEGES ON DATABASE "{}" TO "{}"'
-GET_USERS_COMMAND = "SELECT usename FROM pg_user WHERE usename='{}'"
-GET_DBS_COMMAND = "SELECT datname FROM pg_database WHERE datname='{}'"
+USER_EXISTS_COMMAND = "SELECT usename FROM pg_user WHERE usename='{}'"
+DB_EXISTS_COMMAND = "SELECT datname FROM pg_database WHERE datname='{}'"
 COPY_DB_COMMAND = 'CREATE DATABASE "{}" WITH TEMPLATE "{}" OWNER "{}"'
 
 DEFAULT_USER = 'newuser'
@@ -48,6 +48,16 @@ def enter_password():
 
 @pytest.fixture
 def pgsu():
+    """Return configured PGSU instance.
+
+    For testing postgresql configurations with passwords / nonstandard ports, you can set the environment variables:
+      * PGSU_TEST_HOST
+      * PGSU_TEST_PORT
+      * PGSU_TEST_PASSWORD
+      * PGSU_TEST_USER
+      * PGSU_TEST_database
+
+    """
     with enter_password():
 
         dsn = {
@@ -62,8 +72,12 @@ def pgsu():
 
 @pytest.fixture
 def user(pgsu):
+    """Create a new user in the DB cluster.
+
+    User is deleted again after tests finish.
+    """
     # if user already exists, fail (we don't want to cause trouble)
-    assert not pgsu.execute(GET_USERS_COMMAND.format(DEFAULT_USER))
+    assert not pgsu.execute(USER_EXISTS_COMMAND.format(DEFAULT_USER))
 
     pgsu.execute(CREATE_USER_COMMAND.format(DEFAULT_USER, DEFAULT_PASSWORD))
     yield DEFAULT_USER
@@ -72,8 +86,12 @@ def user(pgsu):
 
 @pytest.fixture
 def database(pgsu, user):
+    """Create test database.
+
+    The test DB is deleted again after tests finish.
+    """
     # if database already exists, fail (we don't want to cause trouble)
-    assert not pgsu.execute(GET_DBS_COMMAND.format(DEFAULT_DB))
+    assert not pgsu.execute(DB_EXISTS_COMMAND.format(DEFAULT_DB))
 
     pgsu.execute(CREATE_DB_COMMAND.format(DEFAULT_DB, user))
     yield DEFAULT_DB
