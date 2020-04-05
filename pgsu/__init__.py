@@ -144,8 +144,6 @@ class PGSU:
             for pg_host in set([self.dsn.get('host'), None, 'localhost']):
                 dsn['host'] = pg_host
 
-                click.echo(dsn)
-
                 if _try_connect_psycopg(**dsn):
                     self.dsn = dsn
                     self.connection_mode = PostgresConnectionMode.PSYCOPG

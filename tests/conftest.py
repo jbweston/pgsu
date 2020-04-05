@@ -9,18 +9,18 @@ if platform.system() == 'Windows':
 else:
     locale = 'en_US.UTF-8'
 
+USER_EXISTS_COMMAND = "SELECT usename FROM pg_user WHERE usename='{}'"
 CREATE_USER_COMMAND = """CREATE USER "{}" WITH PASSWORD '{}'"""
 DROP_USER_COMMAND = 'DROP USER "{}"'
 
-
+DB_EXISTS_COMMAND = "SELECT datname FROM pg_database WHERE datname='{}'"
 CREATE_DB_COMMAND = \
 """CREATE DATABASE "{{}}" OWNER "{{}}" ENCODING 'UTF8' LC_COLLATE='{loc}' LC_CTYPE='{loc}' TEMPLATE=template0"""\
     .format(loc=locale)
 DROP_DB_COMMAND = 'DROP DATABASE "{}"'
-GRANT_PRIV_COMMAND = 'GRANT ALL PRIVILEGES ON DATABASE "{}" TO "{}"'
-USER_EXISTS_COMMAND = "SELECT usename FROM pg_user WHERE usename='{}'"
-DB_EXISTS_COMMAND = "SELECT datname FROM pg_database WHERE datname='{}'"
 COPY_DB_COMMAND = 'CREATE DATABASE "{}" WITH TEMPLATE "{}" OWNER "{}"'
+
+GRANT_PRIV_COMMAND = 'GRANT ALL PRIVILEGES ON DATABASE "{}" TO "{}"'
 
 DEFAULT_USER = 'newuser'
 DEFAULT_PASSWORD = 'newpassword'  # noqa
