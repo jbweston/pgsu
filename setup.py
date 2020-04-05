@@ -8,7 +8,7 @@ setup(
     description=
     ('Connect to an existing PostgreSQL cluster as the `postgres` superuser and execute SQL commands.'
      ),
-    url='https://github.com/ltalirz/pgsu',
+    url='https://github.com/aiidateam/pgsu',
     author='AiiDA Team',
     author_email='aiidateam@gmail.com',
     classifiers=[
