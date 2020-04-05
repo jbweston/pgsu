@@ -1,13 +1,18 @@
 # encoding: utf-8
 from __future__ import absolute_import
 from setuptools import setup, find_packages
+import os
+
+THIS_FOLDER = os.path.split(os.path.abspath(__file__))[0]
 
 setup(
     name='pgsu',
     version='0.1.0',
     description=
-    ('Connect to an existing PostgreSQL cluster as the `postgres` superuser and execute SQL commands.'
+    ('Connect to an existing PostgreSQL cluster as a postgres superuser and execute SQL commands.'
      ),
+    long_description=open(os.path.join(THIS_FOLDER, 'README.md')).read(),
+    long_description_content_type='text/markdown',
     url='https://github.com/aiidateam/pgsu',
     author='AiiDA Team',
     author_email='aiidateam@gmail.com',

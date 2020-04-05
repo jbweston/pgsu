@@ -4,9 +4,11 @@
 [![GitHub license](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/aiidateam/pgsu/blob/master/LICENSE)
 # pgsu
 
-Connect to an existing PostgreSQL cluster as the `postgres` superuser and execute SQL commands.
+Connect to an existing PostgreSQL cluster as a PostgreSQL [SUPERUSER](https://www.postgresql.org/docs/current/sql-createrole.html) and execute SQL commands.
 
-Use this module e.g. to create databases and database users from a command line interface.
+[`psycopg2`](https://pypi.org/project/psycopg2/) has a great API for interacting with PostgreSQL, once you provide it with the connection parameters for a given database.
+However, what if your desired database and database user do not yet exist?
+In order to create them, you will need to connect to PostgreSQL as a SUPERUSER.
 
 ## Features
 
@@ -15,8 +17,8 @@ Use this module e.g. to create databases and database users from a command line 
    * [Ubuntu 18.04](https://github.com/actions/virtual-environments/blob/master/images/linux/Ubuntu1804-README.md) & PostgreSQL docker container
    * [MacOS 10.15](https://github.com/actions/virtual-environments/blob/master/images/macos/macos-10.15-Readme.md) and PostgreSQL installed via `conda`
    * [Windows Server 2019](https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md) and PostgreSQL installed via `conda`
- * uses [psycopg2](http://initd.org/psycopg/docs/index.html) to connect where possible
- * can use `sudo` to become the `postgres` UNIX user if necessary/possible (Ubuntu setups)
+ * uses [psycopg2](http://initd.org/psycopg/docs/index.html) to connect if possible
+ * can use `sudo` to become the `postgres` UNIX user if necessary/possible (default Ubuntu PostgreSQL setups)
    
 ## Usage
 
@@ -34,7 +36,7 @@ These are the default settings:
 ```python
 from pgsu import PGSU
 pgsu = PGSU(dsn={
-    'host': 'localhost',
+    'host': None,
     'port': 5432,
     'user': 'postgres',
     'password': None,
