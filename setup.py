@@ -11,6 +11,18 @@ setup(
     url='https://github.com/ltalirz/pgsu',
     author='AiiDA Team',
     author_email='aiidateam@gmail.com',
+    classifiers=[
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: POSIX :: Linux",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: Microsoft :: Windows",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+    ],
     license='MIT',
     packages=find_packages(),
     install_requires=[

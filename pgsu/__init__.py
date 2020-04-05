@@ -6,6 +6,8 @@
 from __future__ import absolute_import
 import logging
 import traceback
+import os
+import platform
 
 try:
     import subprocess32 as subprocess
@@ -16,15 +18,21 @@ from enum import IntEnum
 import click
 
 DEFAULT_DSN = {
-    'host': 'localhost',
+    'host':
+    None,  # 'localhost' causes psql to connect via method 'host' instead of 'local'
     'port': 5432,
     'user': 'postgres',
     'password': None,
     'database': 'template1',
 }
 
+# By default, try "sudo" only on Ubuntu
+DEFAULT_TRY_SUDO = platform.system(
+) == 'Linux' and 'Ubuntu' in platform.version()
+DEFAULT_UNIX_USER = 'postgres'
+
 LOGGER = logging.getLogger('pgsu')
-LOGGER.setLevel(logging.ERROR)
+LOGGER.setLevel(logging.DEBUG)
 
 
 class PostgresConnectionMode(IntEnum):
@@ -65,21 +73,29 @@ class PGSU:
 
         :param interactive: use True for verdi commands
         :param quiet: use False to show warnings/exceptions
-        :param dsn: psycopg dictionary containing keys like 'host', 'user', 'port', 'database'
+        :param dsn: psycopg dictionary containing keys like 'host', 'user', 'port', 'database'.
+            It is sufficient to provide only those values that deviate from the defaults.
         :param determine_setup: Whether to determine setup upon instantiation.
             You may set this to False and use the 'determine_setup()' method instead.
+        :param unix_user: UNIX user to try to "become", if connection via psycopg2 fails
         """
         self.interactive = interactive
-        self.quiet = quiet
+        if not quiet:
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.INFO)
+            LOGGER.addHandler(ch)
         self.connection_mode = PostgresConnectionMode.DISCONNECTED
 
-        self.setup_fail_callback = prompt_db_info if interactive else None
         self.setup_fail_counter = 0
         self.setup_max_tries = 1
 
         self.dsn = DEFAULT_DSN.copy()
         if dsn is not None:
             self.dsn.update(dsn)
+
+        # Used on Ubuntu only!
+        self.try_sudo = DEFAULT_TRY_SUDO
+        self.unix_user = DEFAULT_UNIX_USER
 
         if determine_setup:
             self.determine_setup()
@@ -90,29 +106,19 @@ class PGSU:
         :param command: A psql command line as a str
         :param kwargs: will be forwarded to _execute_... function
         """
-        # Use self.dsn as default kwargs, update with provided kwargs
-        kw_copy = self.dsn.copy()
-        kw_copy.update(kwargs)
+        # Use self.dsn as default kwargs, update with provided dsn
+        dsn = self.dsn.copy()
+        dsn.update(kwargs)
 
-        if self.connection_mode == PostgresConnectionMode.PSYCOPG:  # pylint: disable=no-else-return
-            return _execute_psyco(command, **kw_copy)
-        elif self.connection_mode == PostgresConnectionMode.PSQL:
-            return _execute_psql(command, **kw_copy)
+        if self.connection_mode == PostgresConnectionMode.PSYCOPG:
+            return _execute_psyco(command, dsn)
+        if self.connection_mode == PostgresConnectionMode.PSQL:
+            return _execute_su_psql(command, dsn)
 
         raise ConnectionError(
             'Could not connect to PostgreSQL server using dsn={}.\n'.format(
-                kw_copy) +
-            'Consider providing non-standard connection parameters via PGSU(dsn=...).'
-        )
-
-    def set_setup_fail_callback(self, callback):
-        """
-        Set a callback to be called when setup cannot be determined automatically
-
-        :param callback: a callable with signature ``callback(interactive, dsn)``
-          that returns a ``dsn`` dictionary.
-        """
-        self.setup_fail_callback = callback
+                dsn) +
+            'Consider providing connection parameters via PGSU(dsn={...}).')
 
     def determine_setup(self):
         """Determine how to connect as the postgres superuser.
@@ -126,32 +132,43 @@ class PGSU:
         :returns success: True, if connection could be established.
         :rtype success: bool
         """
-        # find out if we run as a postgres superuser or can connect as postgres
-        # This will work on OSX in some setups but not in the default Debian one
         dsn = self.dsn.copy()
 
-        # First try the user specified (by default: 'postgres')
-        # Then try not specifying a user
-        for pg_user in set([dsn.get('user'), None]):
+        # Try to connect as a postgres superuser via psycopg2 (equivalent to using psql).
+        LOGGER.debug('Trying to connect via "psycopg2"...')
+        for pg_user in set([self.dsn.get('user'), None]):
             dsn['user'] = pg_user
-            if _try_connect_psycopg(**dsn):
-                self.dsn = dsn
-                self.connection_mode = PostgresConnectionMode.PSYCOPG
-                return True
+            # First try the host specified (works if 'host' has setting 'trust' in pg_hba.conf).
+            # Then try local connection (works if 'local' has setting 'trust' in pg_hba.conf).
+            # Then try 'host' localhost via TCP/IP.
+            for pg_host in set([self.dsn.get('host'), None, 'localhost']):
+                dsn['host'] = pg_host
 
-        # This will work for the default Debian postgres setup, assuming that sudo is available to the user
-        # Check if the user can find the sudo command
-        if _sudo_exists():
-            if _try_subcmd(interactive=self.interactive,
-                           quiet=self.quiet,
-                           **dsn):
-                self.dsn = dsn
-                self.connection_mode = PostgresConnectionMode.PSQL
-                return True
-        elif not self.quiet:
-            click.echo(
-                'Warning: Could not find `sudo` for connecting to the database.'
-            )
+                click.echo(dsn)
+
+                if _try_connect_psycopg(**dsn):
+                    self.dsn = dsn
+                    self.connection_mode = PostgresConnectionMode.PSYCOPG
+                    return True
+
+        # Ubuntu uses setting 'peer' for 'local', i.e. we need to be UNIX user 'postgres' in order to connect as
+        # database user 'postgres'.
+        # Check if 'sudo' is available and try to become 'postgres'.
+        if self.try_sudo:
+            LOGGER.debug('Trying to connect by becoming the "%s" unix user...',
+                         self.unix_user)
+            if _sudo_exists():
+                dsn = self.dsn.copy()
+                dsn['user'] = self.unix_user
+
+                if _try_su_psql(interactive=self.interactive, dsn=dsn):
+                    self.dsn = dsn
+                    self.connection_mode = PostgresConnectionMode.PSQL
+                    return True
+            else:
+                LOGGER.info(
+                    'Could not find `sudo` to become the the "%s" unix user.',
+                    self.unix_user)
 
         self.setup_fail_counter += 1
         return self._no_setup_detected()
@@ -161,15 +178,10 @@ class PGSU:
 
         :returns: False, if no successful try.
         """
-        message = '\n'.join([
-            'Warning: Unable to autodetect postgres setup - do you know how to access it?',
-        ])
+        LOGGER.warning('Unable to autodetect postgres setup.')
 
-        if not self.quiet:
-            click.echo(message)
-
-        if self.setup_fail_callback and self.setup_fail_counter <= self.setup_max_tries:
-            self.dsn = self.setup_fail_callback(self.interactive, self.dsn)
+        if self.interactive and self.setup_fail_counter <= self.setup_max_tries:
+            self.dsn = prompt_for_dsn(self.dsn)
             return self.determine_setup()
 
         return False
@@ -180,44 +192,31 @@ class PGSU:
                                         PostgresConnectionMode.PSQL)
 
 
-def prompt_db_info(interactive, dsn):
+def prompt_for_dsn(dsn):
     """
-    Prompt interactively for postgres database connection details
+    Prompt interactively for postgres database connection details.
 
-    Can be used as a setup fail callback for :py:class:`PGSU`
-
-    :return: dictionary with the following keys: host, port, database, user
+    :return: dictionary with the keys: host, port, database, user, password
     """
-    if not interactive:
-        return DEFAULT_DSN
+    click.echo('Please provide PostgreSQL connection info:')
 
-    access = False
-    while not access:
-        dsn_new = {}
-        dsn_new['host'] = click.prompt('postgres host',
-                                       default=dsn.get('host'),
-                                       type=str)
-        dsn_new['port'] = click.prompt('postgres port',
-                                       default=dsn.get('port'),
-                                       type=int)
-        dsn_new['user'] = click.prompt('postgres super user',
-                                       default=dsn.get('user'),
-                                       type=str)
-        dsn_new['database'] = click.prompt('database',
-                                           default=dsn.get('database'),
-                                           type=str)
-        click.echo('')
-        click.echo('Trying to access postgres ...')
-        if _try_connect_psycopg(**dsn_new):
-            access = True
-        else:
-            dsn_new['password'] = click.prompt(
-                'postgres password of {}'.format(dsn_new['user']),
-                hide_input=True,
-                type=str,
-                default='')
-            if not dsn_new.get('password'):
-                dsn_new.pop('password')
+    # Note: Using '' as the prompt default is necessary to allow users to leave the field empty.
+    #       Using `None` in the dictionary is necessary in order for psycopg2 to interpret the value as not provided.
+    dsn_new = {}
+    dsn_new['host'] = click.prompt(
+        'postgres host', default=dsn.get('host') or "", type=str) or None
+    dsn_new['port'] = click.prompt(
+        'postgres port', default=dsn.get('port'), type=int) or None
+    dsn_new['user'] = click.prompt(
+        'postgres super user', default=dsn.get('user'), type=str) or None
+    dsn_new['database'] = click.prompt(
+        'database', default=dsn.get('database'), type=str) or None
+    dsn_new['password'] = click.prompt(
+        'postgres password of {}'.format(dsn_new['user']),
+        #hide_input=True,   # this breaks the input mocking in the tests. could make this configurable instead
+        type=str,
+        default=dsn.get('password') or '') or None
+
     return dsn_new
 
 
@@ -234,66 +233,22 @@ def _try_connect_psycopg(**kwargs):
         success = True
         conn.close()
     except Exception:  # pylint: disable=broad-except
-        LOGGER.warning('Unable to connect via psycopg')
-        LOGGER.warning(traceback.format_exc())
+        LOGGER.debug('Unable to connect via psycopg')
+        LOGGER.debug(traceback.format_exc())
     return success
 
 
-def _sudo_exists():
-    """
-    Check that the sudo command can be found
-
-    :return: True if successful, False otherwise
-    """
-    try:
-        subprocess.check_output(['sudo', '-V'])
-    except subprocess.CalledProcessError:
-        LOGGER.warning('Unable to run "sudo" in a subprocess')
-        LOGGER.warning(traceback.format_exc())
-        return False
-    except OSError:
-        LOGGER.warning('Unable to run "sudo" in a subprocess')
-        LOGGER.warning(traceback.format_exc())
-        return False
-
-    return True
-
-
-def _try_subcmd(**kwargs):
-    """
-    try to run psql in a subprocess.
-
-    :return: True if successful, False otherwise
-    """
-    success = False
-    try:
-        kwargs['stderr'] = subprocess.STDOUT
-        _execute_psql(r'\q', **kwargs)
-        success = True
-    except subprocess.CalledProcessError:
-        LOGGER.warning('Unable to run "psql" in a subprocess')
-        LOGGER.warning(traceback.format_exc())
-    return success
-
-
-def _execute_psyco(command, **kwargs):
+def _execute_psyco(command, dsn):
     """
     executes a postgres commandline through psycopg2
 
     :param command: A psql command line as a str
-    :param kwargs: will be forwarded to psycopg2.connect
+    :param dsn: will be forwarded to psycopg2.connect
     """
     import psycopg2  # pylint: disable=import-outside-toplevel
 
-    # Note: Ubuntu 18.04 uses "peer" as the default postgres configuration
-    # which allows connections only when the unix user matches the database user.
-    # This restriction no longer applies for IPv4/v6-based connection,
-    # when specifying host=localhost.
-    if kwargs.get('host') is None:
-        kwargs['host'] = 'localhost'
-
     output = None
-    with psycopg2.connect(**kwargs) as conn:
+    with psycopg2.connect(**dsn) as conn:
         conn.autocommit = True
         with conn.cursor() as cursor:
             cursor.execute(command)
@@ -305,45 +260,78 @@ def _execute_psyco(command, **kwargs):
     return output
 
 
-def _execute_psql(command,
-                  user='postgres',
-                  quiet=True,
-                  interactive=False,
-                  **kwargs):
+def _sudo_exists():
+    """
+    Check that the sudo command can be found
+
+    :return: True if successful, False otherwise
+    """
+    try:
+        subprocess.check_output(['sudo', '-V'])
+        return True
+    except (subprocess.CalledProcessError, OSError):
+        LOGGER.debug('Failed to run "sudo" in a subprocess')
+        LOGGER.debug(traceback.format_exc())
+
+    return False
+
+
+def _try_su_psql(interactive, dsn):
+    """
+    Try to run psql in a subprocess as a different UNIX user.
+
+    :return: True if successful, False otherwise
+    """
+    try:
+        _execute_su_psql(r'\q',
+                         interactive=interactive,
+                         dsn=dsn,
+                         stderr=subprocess.STDOUT)
+        return True
+    except subprocess.CalledProcessError:
+        LOGGER.debug('Failed to run "psql" in a subprocess as user %s',
+                     dsn.get('user'))
+        LOGGER.debug(traceback.format_exc())
+    return False
+
+
+def _execute_su_psql(command, dsn, interactive=False, stderr=None):
     """
     Executes an SQL command via ``psql`` as another system user in a subprocess.
 
-    Tries to "become" the user specified in ``kwargs`` (i.e. interpreted as UNIX system user)
+    Tries to "become" the user specified in ``dsn`` (i.e. interpreted as UNIX system user)
     and run psql in a subprocess.
 
     :param command: A psql command line as a str
-    :param quiet: If True, don't print warnings.
+    :param dsn: connection details to forward to psql, signature as in psycopg2.connect
     :param interactive: If False, `sudo` won't ask for a password and fail if one is required.
-    :param kwargs: connection details to forward to psql, signature as in psycopg2.connect
+    :param stderr: Allows redirection of stderr for subprocess call
     """
-    option_str = ''
+    psql_option_str = ''
 
-    database = kwargs.pop('database', None)
+    database = dsn.get('database')
     if database:
-        option_str += '-d {}'.format(database)
-    # to do: Forward password to psql; ignore host only when the password is None.  # pylint: disable=fixme
-    kwargs.pop('password', None)
+        psql_option_str += '-d {}'.format(database)
 
-    host = kwargs.pop('host', 'localhost')
+    # to do: Forward password to psql; ignore host only when the password is None.  # pylint: disable=fixme
+    # Note: There is currently no known postgresql setup that needs this, though
+    # password = dsn.get('password')
+
+    host = dsn.pop('host', 'localhost')
     if host and host != 'localhost':
-        option_str += ' -h {}'.format(host)
-    elif not quiet:
-        click.echo(
-            "Warning: Found host 'localhost' but dropping '-h localhost' option for psql "
-            +
+        psql_option_str += ' -h {}'.format(host)
+    else:
+        LOGGER.debug(
+            "Found host 'localhost' but dropping '-h localhost' option for psql "
             'since this may cause psql to switch to password-based authentication.'
         )
 
-    port = kwargs.pop('port', None)
+    port = dsn.get('port')
     if port:
-        option_str += ' -p {}'.format(port)
+        psql_option_str += ' -p {}'.format(port)
 
-    user = kwargs.pop('user', 'postgres')
+    # Note: This is *both* the UNIX user to become *and* the database user
+    user = dsn.get('user')
 
     # Build command line
     sudo_cmd = ['sudo']
@@ -353,11 +341,15 @@ def _execute_psql(command,
 
     psql_cmd = [
         'psql {opt} -tc {cmd}'.format(cmd=escape_for_bash(command),
-                                      opt=option_str)
+                                      opt=psql_option_str)
     ]
     sudo_su_psql = sudo_cmd + su_cmd + psql_cmd
-    result = subprocess.check_output(sudo_su_psql, **kwargs)
-    result = result.decode('utf-8').strip().split('\n')
+
+    LOGGER.info(
+        "Trying to become '%s' user. You may be asked for your 'sudo' password.",
+        user)
+    result = subprocess.check_output(sudo_su_psql, stderr=stderr)
+    result = result.decode('utf-8').strip().split(os.linesep)
     result = [i for i in result if i]
 
     return result

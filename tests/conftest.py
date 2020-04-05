@@ -1,11 +1,8 @@
 from __future__ import absolute_import
-import sys
 import pytest
 from pgsu import PGSU
-from contextlib import contextmanager
 import os
 import platform
-from io import StringIO
 
 if platform.system() == 'Windows':
     locale = 'en-US'
@@ -30,25 +27,9 @@ DEFAULT_PASSWORD = 'newpassword'  # noqa
 DEFAULT_DB = 'newdb'
 
 
-@contextmanager
-def enter_password():
-    """Replace standard input with password.
-
-    See https://stackoverflow.com/a/36491341/1069467
-    """
-    pgsu_pw = os.getenv("PGSU_TEST_PASSWORD")
-    if not pgsu_pw:
-        yield
-    else:
-        orig = sys.stdin
-        sys.stdin = StringIO(pgsu_pw + '\n')
-        yield
-        sys.stdin = orig
-
-
-@pytest.fixture
-def pgsu():
-    """Return configured PGSU instance.
+@pytest.fixture()
+def dsn_from_env():
+    """Read DSN from test environment variables.
 
     For testing postgresql configurations with passwords / nonstandard ports, you can set the environment variables:
       * PGSU_TEST_HOST
@@ -57,17 +38,24 @@ def pgsu():
       * PGSU_TEST_USER
       * PGSU_TEST_database
 
+    :returns:  Dictionary with (only) the DSN keys provided via environment variables.
     """
-    with enter_password():
+    dsn = {
+        'host': os.getenv('PGSU_TEST_HOST'),
+        'port': os.getenv('PGSU_TEST_PORT'),
+        'password': os.getenv('PGSU_TEST_PASSWORD'),
+        'user': os.getenv('PGSU_TEST_USER'),
+        'database': os.getenv('PGSU_TEST_DATABASE'),
+    }
+    return {k: v for k, v in dsn.items() if v}
 
-        dsn = {
-            'host': os.getenv('PGSU_TEST_HOST'),
-            'port': os.getenv('PGSU_TEST_PORT'),
-            'password': os.getenv('PGSU_TEST_PASSWORD'),
-            'user': os.getenv('PGSU_TEST_USER'),
-            'database': os.getenv('PGSU_TEST_database'),
-        }
-        return PGSU(dsn={k: v for k, v in dsn.items() if v})
+
+@pytest.fixture
+def pgsu(dsn_from_env):
+    """Return configured PGSU instance.
+
+    """
+    return PGSU(dsn=dsn_from_env)
 
 
 @pytest.fixture
