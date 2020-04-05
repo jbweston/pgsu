@@ -14,6 +14,7 @@ In order to create them, you will need to connect to PostgreSQL as a SUPERUSER.
 
  * autodetects postgres setup, tested on
    * [Ubuntu 18.04](https://github.com/actions/virtual-environments/blob/master/images/linux/Ubuntu1804-README.md) & PostgreSQL installed via `apt`
+   * [Ubuntu 16.04](https://github.com/actions/virtual-environments/blob/master/images/linux/Ubuntu1604-README.md) & PostgreSQL installed via `apt`
    * [Ubuntu 18.04](https://github.com/actions/virtual-environments/blob/master/images/linux/Ubuntu1804-README.md) & PostgreSQL docker container
    * [MacOS 10.15](https://github.com/actions/virtual-environments/blob/master/images/macos/macos-10.15-Readme.md) and PostgreSQL installed via `conda`
    * [Windows Server 2019](https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md) and PostgreSQL installed via `conda`
