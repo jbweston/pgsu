@@ -10,20 +10,18 @@
       - --write
       - --nobackups
 
-- repo: local
+- repo: https://github.com/pre-commit/mirrors-yapf
+  rev: v0.30.0
   hooks:
-  # yapf = yet another python formatter
   - id: yapf
     name: yapf
-    entry: yapf
-    language: system
     types: [python]
-    args: ["-i"]
+    args: ['-i']
 
-  # prospector: collection of linters
-  - id: prospector
+- repo: local
+  hooks:
+  - id: pylint
+    name: pylint
+    types: [python]
     language: system
-    types: [file, python]
-    name: prospector
-    description: "This hook runs Prospector: https://github.com/landscapeio/prospector"
-    entry: prospector
+    entry: pylint

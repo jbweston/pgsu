@@ -17,18 +17,18 @@ except ImportError:
 from enum import IntEnum
 import click
 
+# By default, we attempt "local" connection type (no host, no port specified).
+# Specifying host 'localhost' (and/or a port) causes psql to connect via type 'host' instead
 DEFAULT_DSN = {
-    'host':
-    None,  # 'localhost' causes psql to connect via method 'host' instead of 'local'
-    'port': 5432,
+    'host': None,
+    'port': None,
     'user': 'postgres',
     'password': None,
     'database': 'template1',
 }
 
 # By default, try "sudo" only on Ubuntu
-DEFAULT_TRY_SUDO = platform.system(
-) == 'Linux' and 'Ubuntu' in platform.version()
+DEFAULT_TRY_SUDO = platform.system() == 'Linux' and 'Ubuntu' in platform.version()
 DEFAULT_UNIX_USER = 'postgres'
 
 LOGGER = logging.getLogger('pgsu')
@@ -64,14 +64,10 @@ class PGSU:
      * 'template0' is the unmodifiable template database (which you *cannot* connect to)
      * 'template1' is the modifiable template database (which you *can* connect to)
     """
-    def __init__(self,
-                 interactive=False,
-                 quiet=True,
-                 dsn=None,
-                 determine_setup=True):
+    def __init__(self, interactive=False, quiet=True, dsn=None, determine_setup=True):
         """Store postgres connection info.
 
-        :param interactive: use True for verdi commands
+        :param interactive: use True to enable interactive prompts
         :param quiet: use False to show warnings/exceptions
         :param dsn: psycopg dictionary containing keys like 'host', 'user', 'port', 'database'.
             It is sufficient to provide only those values that deviate from the defaults.
@@ -81,9 +77,9 @@ class PGSU:
         """
         self.interactive = interactive
         if not quiet:
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.INFO)
-            LOGGER.addHandler(ch)
+            stream_handler = logging.StreamHandler()
+            stream_handler.setLevel(logging.INFO)
+            LOGGER.addHandler(stream_handler)
         self.connection_mode = PostgresConnectionMode.DISCONNECTED
 
         self.setup_fail_counter = 0
@@ -115,10 +111,8 @@ class PGSU:
         if self.connection_mode == PostgresConnectionMode.PSQL:
             return _execute_su_psql(command, dsn)
 
-        raise ConnectionError(
-            'Could not connect to PostgreSQL server using dsn={}.\n'.format(
-                dsn) +
-            'Consider providing connection parameters via PGSU(dsn={...}).')
+        raise ConnectionError('Could not connect to PostgreSQL server using dsn={}.\n'.format(dsn) +
+                              'Consider providing connection parameters via PGSU(dsn={...}).')
 
     def determine_setup(self):
         """Determine how to connect as the postgres superuser.
@@ -136,12 +130,12 @@ class PGSU:
 
         # Try to connect as a postgres superuser via psycopg2 (equivalent to using psql).
         LOGGER.debug('Trying to connect via "psycopg2"...')
-        for pg_user in set([self.dsn.get('user'), None]):
+        for pg_user in unique_list([self.dsn.get('user'), None]):
             dsn['user'] = pg_user
             # First try the host specified (works if 'host' has setting 'trust' in pg_hba.conf).
             # Then try local connection (works if 'local' has setting 'trust' in pg_hba.conf).
             # Then try 'host' localhost via TCP/IP.
-            for pg_host in set([self.dsn.get('host'), None, 'localhost']):
+            for pg_host in unique_list([self.dsn.get('host'), None, 'localhost']):
                 dsn['host'] = pg_host
 
                 if _try_connect_psycopg(**dsn):
@@ -153,8 +147,7 @@ class PGSU:
         # database user 'postgres'.
         # Check if 'sudo' is available and try to become 'postgres'.
         if self.try_sudo:
-            LOGGER.debug('Trying to connect by becoming the "%s" unix user...',
-                         self.unix_user)
+            LOGGER.debug('Trying to connect by becoming the "%s" unix user...', self.unix_user)
             if _sudo_exists():
                 dsn = self.dsn.copy()
                 dsn['user'] = self.unix_user
@@ -164,9 +157,7 @@ class PGSU:
                     self.connection_mode = PostgresConnectionMode.PSQL
                     return True
             else:
-                LOGGER.info(
-                    'Could not find `sudo` to become the the "%s" unix user.',
-                    self.unix_user)
+                LOGGER.info('Could not find `sudo` to become the the "%s" unix user.', self.unix_user)
 
         self.setup_fail_counter += 1
         return self._no_setup_detected()
@@ -186,8 +177,8 @@ class PGSU:
 
     @property
     def is_connected(self):
-        return self.connection_mode in (PostgresConnectionMode.PSYCOPG,
-                                        PostgresConnectionMode.PSQL)
+        """Return true, if successful connection established."""
+        return self.connection_mode in (PostgresConnectionMode.PSYCOPG, PostgresConnectionMode.PSQL)
 
 
 def prompt_for_dsn(dsn):
@@ -201,14 +192,10 @@ def prompt_for_dsn(dsn):
     # Note: Using '' as the prompt default is necessary to allow users to leave the field empty.
     #       Using `None` in the dictionary is necessary in order for psycopg2 to interpret the value as not provided.
     dsn_new = {}
-    dsn_new['host'] = click.prompt(
-        'postgres host', default=dsn.get('host') or "", type=str) or None
-    dsn_new['port'] = click.prompt(
-        'postgres port', default=dsn.get('port'), type=int) or None
-    dsn_new['user'] = click.prompt(
-        'postgres super user', default=dsn.get('user'), type=str) or None
-    dsn_new['database'] = click.prompt(
-        'database', default=dsn.get('database'), type=str) or None
+    dsn_new['host'] = click.prompt('postgres host', default=dsn.get('host') or "", type=str) or None
+    dsn_new['port'] = click.prompt('postgres port', default=dsn.get('port'), type=int) or None
+    dsn_new['user'] = click.prompt('postgres super user', default=dsn.get('user'), type=str) or None
+    dsn_new['database'] = click.prompt('database', default=dsn.get('database'), type=str) or None
     dsn_new['password'] = click.prompt(
         'postgres password of {}'.format(dsn_new['user']),
         #hide_input=True,   # this breaks the input mocking in the tests. could make this configurable instead
@@ -281,14 +268,10 @@ def _try_su_psql(interactive, dsn):
     :return: True if successful, False otherwise
     """
     try:
-        _execute_su_psql(r'\q',
-                         interactive=interactive,
-                         dsn=dsn,
-                         stderr=subprocess.STDOUT)
+        _execute_su_psql(r'\q', interactive=interactive, dsn=dsn, stderr=subprocess.STDOUT)
         return True
     except subprocess.CalledProcessError:
-        LOGGER.debug('Failed to run "psql" in a subprocess as user %s',
-                     dsn.get('user'))
+        LOGGER.debug('Failed to run "psql" in a subprocess as user %s', dsn.get('user'))
         LOGGER.debug(traceback.format_exc())
     return False
 
@@ -319,10 +302,8 @@ def _execute_su_psql(command, dsn, interactive=False, stderr=None):
     if host and host != 'localhost':
         psql_option_str += ' -h {}'.format(host)
     else:
-        LOGGER.debug(
-            "Found host 'localhost' but dropping '-h localhost' option for psql "
-            'since this may cause psql to switch to password-based authentication.'
-        )
+        LOGGER.debug("Found host 'localhost' but dropping '-h localhost' option for psql "
+                     'since this may cause psql to switch to password-based authentication.')
 
     port = dsn.get('port')
     if port:
@@ -337,15 +318,10 @@ def _execute_su_psql(command, dsn, interactive=False, stderr=None):
         sudo_cmd += ['-n']
     su_cmd = ['su', user, '-c']
 
-    psql_cmd = [
-        'psql {opt} -tc {cmd}'.format(cmd=escape_for_bash(command),
-                                      opt=psql_option_str)
-    ]
+    psql_cmd = ['psql {opt} -tc {cmd}'.format(cmd=escape_for_bash(command), opt=psql_option_str)]
     sudo_su_psql = sudo_cmd + su_cmd + psql_cmd
 
-    LOGGER.info(
-        "Trying to become '%s' user. You may be asked for your 'sudo' password.",
-        user)
+    LOGGER.info("Trying to become '%s' user. You may be asked for your 'sudo' password.", user)
     result = subprocess.check_output(sudo_su_psql, stderr=stderr)
     result = result.decode('utf-8').strip().split(os.linesep)
     result = [i for i in result if i]
@@ -378,3 +354,13 @@ def escape_for_bash(str_to_escape):
     """
     escaped_quotes = str_to_escape.replace("'", """'"'"'""")
     return "'{}'".format(escaped_quotes)
+
+
+def unique_list(non_unique_list):
+    """
+    Return list with unique subset of provided list, maintaining list order.
+
+    Source: https://stackoverflow.com/a/480227/1069467
+    """
+    seen = set()
+    return [x for x in non_unique_list if not (x in seen or seen.add(x))]

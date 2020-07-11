@@ -6,11 +6,11 @@ from __future__ import absolute_import
 import os
 import sys
 from contextlib import contextmanager
-import conftest
-import psycopg2
 from io import StringIO
-from pgsu import PGSU, DEFAULT_DSN
 import six
+import psycopg2
+import conftest
+from pgsu import PGSU, DEFAULT_DSN
 
 
 def test_create_drop_user(user):  # pylint: disable=unused-argument
@@ -60,6 +60,5 @@ def test_interactive(dsn_from_env):
     """Test that connection details can be provided via prompt."""
     dsn_from_env['port'] = DEFAULT_DSN['port']
     with input_dsn(dsn_from_env):
-        PGSU(dsn={'port': 1234}, interactive=True,
-             quiet=False)  # provide wrong port
+        PGSU(dsn={'port': 1234}, interactive=True, quiet=False)  # provide wrong port
         assert PGSU.is_connected

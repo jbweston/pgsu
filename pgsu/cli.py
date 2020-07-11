@@ -3,8 +3,8 @@
 
 """
 from __future__ import absolute_import
-import click
 import pprint
+import click
 from . import PGSU
 
 GET_DBS_COMMAND = "SELECT datname FROM pg_database"

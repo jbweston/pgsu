@@ -1,10 +1,11 @@
 """Test compatibility with pgtest.
 """
 from __future__ import absolute_import
+import pytest
 from pgtest.pgtest import PGTest, which
 from pgsu import PGSU, PostgresConnectionMode
-import pytest
 
+# pylint: disable=invalid-name
 try:
     pg_ctl = which('pg_ctl')
 except FileNotFoundError:
