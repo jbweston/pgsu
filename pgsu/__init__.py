@@ -21,7 +21,7 @@ import click
 # Specifying host 'localhost' (and/or a port) causes psql to connect via type 'host' instead
 DEFAULT_DSN = {
     'host': None,
-    'port': None,
+    'port': 5432,
     'user': 'postgres',
     'password': None,
     'database': 'template1',
