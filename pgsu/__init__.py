@@ -131,12 +131,12 @@ class PGSU:
 
         # Try to connect as a postgres superuser via psycopg2 (equivalent to using psql).
         LOGGER.debug('Trying to connect via "psycopg2"...')
-        for pg_user in set([self.dsn.get('user'), None]):
+        for pg_user in unique_list([self.dsn.get('user'), None]):
             dsn['user'] = pg_user
             # First try the host specified (works if 'host' has setting 'trust' in pg_hba.conf).
             # Then try local connection (works if 'local' has setting 'trust' in pg_hba.conf).
             # Then try 'host' localhost via TCP/IP.
-            for pg_host in set([self.dsn.get('host'), None, 'localhost']):
+            for pg_host in unique_list([self.dsn.get('host'), None, 'localhost']):  # yapf: disable
                 dsn['host'] = pg_host
 
                 if _try_connect_psycopg(**dsn):
@@ -374,3 +374,12 @@ def escape_for_bash(str_to_escape):
     """
     escaped_quotes = str_to_escape.replace("'", """'"'"'""")
     return "'{}'".format(escaped_quotes)
+
+
+def unique_list(non_unique_list):
+    """
+    Return list with unique subset of provided list, maintaining list order.
+    Source: https://stackoverflow.com/a/480227/1069467
+    """
+    seen = set()
+    return [x for x in non_unique_list if not (x in seen or seen.add(x))]
