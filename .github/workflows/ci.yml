@@ -12,10 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python 3.7
+    - name: Set up Python 3.8
       uses: actions/setup-python@v1
       with:
-        python-version: 3.7
+        python-version: 3.8
 
     - name: Install system dependencies
       run: |
@@ -40,7 +40,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.5, 3.8]
+        python-version: [3.5, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -122,12 +122,12 @@ jobs:
   ubuntu-postgres-action:
     # ubuntu using postgres docker container (custom action)
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     timeout-minutes: 5
 
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         postgres-pw: ["testpw"]
 
     steps:
@@ -171,7 +171,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.9]
         postgres-pw: ["testpw"]
 
     services:
