@@ -3,12 +3,10 @@
 
 Test creating/dropping users and databases.
 """
-from __future__ import absolute_import
 import os
 import sys
 from contextlib import contextmanager
 from io import StringIO
-import six
 import psycopg2
 
 from pgsu import PGSU, DEFAULT_DSN
@@ -51,7 +49,7 @@ def input_dsn(dsn):
     for key in ['host', 'port', 'user', 'database', 'password']:
         inputs.append(str(dsn.get(key, '')))
 
-    input_str = six.text_type(os.linesep.join(inputs) + os.linesep)
+    input_str = str(os.linesep.join(inputs) + os.linesep)
     orig = sys.stdin
     sys.stdin = StringIO(input_str)
     yield

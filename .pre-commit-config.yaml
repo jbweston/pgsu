@@ -9,16 +9,6 @@ repos:
   - id: mixed-line-ending
   - id: trailing-whitespace
 
-# modernizer: make sure our code-base is Python 3 ready
-- repo: https://github.com/python-modernize/python-modernize.git
-  rev: v0.9rc0
-  hooks:
-  - id: modernize
-    exclude: ^docs/
-    args:
-      - --write
-      - --nobackups
-
 # yapf = yet another python formatter
 - repo: https://github.com/pre-commit/mirrors-yapf
   rev: v0.30.0

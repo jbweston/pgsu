@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Setup script for pgsu python package"""
-from __future__ import absolute_import
 import os
 from setuptools import setup, find_packages
 
@@ -8,7 +7,7 @@ THIS_FOLDER = os.path.split(os.path.abspath(__file__))[0]
 
 setup(
     name='pgsu',
-    version='0.1.0',
+    version='0.2.0',
     description=
     ('Connect to an existing PostgreSQL cluster as a postgres superuser and execute SQL commands.'
      ),
@@ -23,7 +22,6 @@ setup(
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
@@ -34,12 +32,10 @@ setup(
     install_requires=[
         'psycopg2-binary>=2.8.3',
         'click',
-        'six',
-        "enum34; python_version<'3.5'",
     ],
     extras_require={
         'testing': ['pytest', 'pgtest>=1.3.1', 'pytest-cov'],
         # note: pre-commit hooks require python3
-        'pre-commit': ['pre-commit==1.18.3', 'pylint~=2.5.0']
+        'pre-commit': ['pre-commit~=2.2', 'pylint~=2.5.0']
     },
     entry_points={'console_scripts': ['pgsu=pgsu.cli:run']})

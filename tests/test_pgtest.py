@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Test compatibility with pgtest.
 """
-from __future__ import absolute_import
 from pgtest.pgtest import PGTest, which
 import pytest
 from pgsu import PGSU, PostgresConnectionMode

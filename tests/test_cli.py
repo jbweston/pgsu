@@ -2,7 +2,6 @@
 """Test command line interface.
 
 """
-from __future__ import absolute_import
 import getpass
 from click.testing import CliRunner
 from pgsu.cli import run

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """pytest fixtures and test constants"""
-from __future__ import absolute_import
 import os
 import platform
 import pytest

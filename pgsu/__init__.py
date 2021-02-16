@@ -3,23 +3,14 @@
 
 """
 
-from __future__ import absolute_import
 import logging
 import traceback
 import os
 import platform
 from enum import IntEnum
+import subprocess
 
-try:
-    import subprocess32 as subprocess
-except ImportError:
-    import subprocess
-
-import six
 import click
-
-if six.PY2:
-    ConnectionError = OSError  # pylint: disable=redefined-builtin
 
 DEFAULT_DSN = {
     'host':

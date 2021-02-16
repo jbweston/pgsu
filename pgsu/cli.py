@@ -2,7 +2,6 @@
 """Commandline interface for pgsu
 
 """
-from __future__ import absolute_import
 import pprint
 import click
 from . import PGSU
