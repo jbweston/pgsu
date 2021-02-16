@@ -1,17 +1,18 @@
+# -*- coding: utf-8 -*-
 """Test compatibility with pgtest.
 """
 from __future__ import absolute_import
 from pgtest.pgtest import PGTest, which
-from pgsu import PGSU, PostgresConnectionMode
 import pytest
+from pgsu import PGSU, PostgresConnectionMode
 
 try:
-    pg_ctl = which('pg_ctl')
+    PG_CTL = which('pg_ctl')
 except FileNotFoundError:
-    pg_ctl = None
+    PG_CTL = None
 
 
-@pytest.mark.skipif(not pg_ctl, reason="pg_ctl not found in PATH")
+@pytest.mark.skipif(not PG_CTL, reason='pg_ctl not found in PATH')
 def test_pgtest_compatibility():
     """Test using a temporary postgres cluster set up via PGTest.
     """

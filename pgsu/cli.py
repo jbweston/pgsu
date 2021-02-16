@@ -3,11 +3,11 @@
 
 """
 from __future__ import absolute_import
-import click
 import pprint
+import click
 from . import PGSU
 
-GET_DBS_COMMAND = "SELECT datname FROM pg_database"
+GET_DBS_COMMAND = 'SELECT datname FROM pg_database'
 
 
 @click.command()
@@ -15,6 +15,6 @@ GET_DBS_COMMAND = "SELECT datname FROM pg_database"
 def run(query):
     """Execute SQL command as PostrgreSQL superuser."""
     pgsu = PGSU(interactive=True, quiet=False)
-    click.echo("Executing query: {}".format(query))
+    click.echo('Executing query: {}'.format(query))
     dbs = pgsu.execute(query)
     click.echo(pprint.pformat(dbs))

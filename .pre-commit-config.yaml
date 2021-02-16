@@ -1,29 +1,38 @@
 # Install pre-commit hooks via: pre-commit install
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v2.5.0
+  hooks:
+  - id: double-quote-string-fixer
+  - id: end-of-file-fixer
+  - id: fix-encoding-pragma
+  - id: mixed-line-ending
+  - id: trailing-whitespace
 
 # modernizer: make sure our code-base is Python 3 ready
 - repo: https://github.com/python-modernize/python-modernize.git
-  rev: a234ce4e185cf77a55632888f1811d83b4ad9ef2
+  rev: v0.9rc0
   hooks:
-  - id: python-modernize
+  - id: modernize
     exclude: ^docs/
     args:
       - --write
       - --nobackups
 
-- repo: local
+# yapf = yet another python formatter
+- repo: https://github.com/pre-commit/mirrors-yapf
+  rev: v0.30.0
   hooks:
-  # yapf = yet another python formatter
   - id: yapf
     name: yapf
-    entry: yapf
-    language: system
     types: [python]
-    args: ["-i"]
+    args: ['-i']
 
-  # prospector: collection of linters
-  - id: prospector
+- repo: local
+  hooks:
+  # pylint: static code analysis
+  - id: pylint
+    name: pylint
+    entry: pylint
+    types: [python]
     language: system
-    types: [file, python]
-    name: prospector
-    description: "This hook runs Prospector: https://github.com/landscapeio/prospector"
-    entry: prospector

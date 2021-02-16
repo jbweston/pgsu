@@ -1,13 +1,15 @@
+# -*- coding: utf-8 -*-
+"""pytest fixtures and test constants"""
 from __future__ import absolute_import
-import pytest
-from pgsu import PGSU
 import os
 import platform
+import pytest
+from pgsu import PGSU
 
 if platform.system() == 'Windows':
-    locale = 'en-US'
+    LOCALE = 'en-US'
 else:
-    locale = 'en_US.UTF-8'
+    LOCALE = 'en_US.UTF-8'
 
 USER_EXISTS_COMMAND = "SELECT usename FROM pg_user WHERE usename='{}'"
 CREATE_USER_COMMAND = """CREATE USER "{}" WITH PASSWORD '{}'"""
@@ -16,7 +18,7 @@ DROP_USER_COMMAND = 'DROP USER "{}"'
 DB_EXISTS_COMMAND = "SELECT datname FROM pg_database WHERE datname='{}'"
 CREATE_DB_COMMAND = \
 """CREATE DATABASE "{{}}" OWNER "{{}}" ENCODING 'UTF8' LC_COLLATE='{loc}' LC_CTYPE='{loc}' TEMPLATE=template0"""\
-    .format(loc=locale)
+    .format(loc=LOCALE)
 DROP_DB_COMMAND = 'DROP DATABASE "{}"'
 COPY_DB_COMMAND = 'CREATE DATABASE "{}" WITH TEMPLATE "{}" OWNER "{}"'
 
@@ -51,7 +53,7 @@ def dsn_from_env():
 
 
 @pytest.fixture
-def pgsu(dsn_from_env):
+def pgsu(dsn_from_env):  # pylint: disable=redefined-outer-name
     """Return configured PGSU instance.
 
     """
@@ -59,7 +61,7 @@ def pgsu(dsn_from_env):
 
 
 @pytest.fixture
-def user(pgsu):
+def user(pgsu):  # pylint: disable=redefined-outer-name
     """Create a new user in the DB cluster.
 
     User is deleted again after tests finish.
@@ -73,7 +75,7 @@ def user(pgsu):
 
 
 @pytest.fixture
-def database(pgsu, user):
+def database(pgsu, user):  # pylint: disable=redefined-outer-name
     """Create test database.
 
     The test DB is deleted again after tests finish.

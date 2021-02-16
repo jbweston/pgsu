@@ -8,14 +8,18 @@ import logging
 import traceback
 import os
 import platform
+from enum import IntEnum
 
 try:
     import subprocess32 as subprocess
 except ImportError:
     import subprocess
 
-from enum import IntEnum
+import six
 import click
+
+if six.PY2:
+    ConnectionError = OSError  # pylint: disable=redefined-builtin
 
 DEFAULT_DSN = {
     'host':
@@ -81,9 +85,9 @@ class PGSU:
         """
         self.interactive = interactive
         if not quiet:
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.INFO)
-            LOGGER.addHandler(ch)
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.INFO)
+            LOGGER.addHandler(handler)
         self.connection_mode = PostgresConnectionMode.DISCONNECTED
 
         self.setup_fail_counter = 0
@@ -186,6 +190,7 @@ class PGSU:
 
     @property
     def is_connected(self):
+        """Whether connection to PostgreSQL cluster has been established."""
         return self.connection_mode in (PostgresConnectionMode.PSYCOPG,
                                         PostgresConnectionMode.PSQL)
 
@@ -202,7 +207,7 @@ def prompt_for_dsn(dsn):
     #       Using `None` in the dictionary is necessary in order for psycopg2 to interpret the value as not provided.
     dsn_new = {}
     dsn_new['host'] = click.prompt(
-        'postgres host', default=dsn.get('host') or "", type=str) or None
+        'postgres host', default=dsn.get('host') or '', type=str) or None
     dsn_new['port'] = click.prompt(
         'postgres port', default=dsn.get('port'), type=int) or None
     dsn_new['user'] = click.prompt(

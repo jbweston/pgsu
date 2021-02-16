@@ -20,7 +20,7 @@ In order to create them, you will need to connect to PostgreSQL as a SUPERUSER.
    * [Windows Server 2019](https://github.com/actions/virtual-environments/blob/master/images/win/Windows2019-Readme.md) and PostgreSQL installed via `conda`
  * uses [psycopg2](http://initd.org/psycopg/docs/index.html) to connect if possible
  * can use `sudo` to become the `postgres` UNIX user if necessary/possible (default Ubuntu PostgreSQL setups)
-   
+
 ## Usage
 
 ### Python API

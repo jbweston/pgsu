@@ -35,7 +35,7 @@ jobs:
   ubuntu-apt:
     # ubuntu using postgresql installed via apt (+ pgtest)
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     timeout-minutes: 5
 
     strategy:
@@ -54,8 +54,9 @@ jobs:
       run: |
         sudo rm -f /etc/apt/sources.list.d/dotnetdev.list /etc/apt/sources.list.d/microsoft-prod.list
         sudo apt update
-        sudo apt install postgresql-10
-        sudo cat /etc/postgresql/10/main/pg_hba.conf
+        sudo apt install postgresql-12
+        sudo cat /etc/postgresql/12/main/pg_hba.conf
+        sudo pg_ctlcluster 12 main start
 
     - name: Install pgsu
       run: |
@@ -64,6 +65,8 @@ jobs:
 
     - name: Run test suite
       run: pytest --cov-report xml
+      env:
+        PGSU_TEST_PORT: 5433  # for some reason default on GH actions
 
     - name: Upload coverage report
       if: github.repository == 'aiidateam/pgsu'
@@ -94,7 +97,9 @@ jobs:
       run: |
         sudo rm -f /etc/apt/sources.list.d/dotnetdev.list /etc/apt/sources.list.d/microsoft-prod.list
         sudo apt update
-        sudo apt install postgresql postgresql-contrib
+        sudo apt install postgresql-12
+        sudo cat /etc/postgresql/12/main/pg_hba.conf
+        sudo pg_ctlcluster 12 main start
 
     - name: Install pgsu
       run: |
@@ -103,6 +108,8 @@ jobs:
 
     - name: Run test suite
       run: pytest --cov-report xml
+      env:
+        PGSU_TEST_PORT: 5433  # for some reason default on GH actions
 
     - name: Upload coverage report
       if: github.repository == 'aiidateam/pgsu'
@@ -261,7 +268,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - uses: goanpeca/setup-miniconda@v1
+    - uses: conda-incubator/setup-miniconda@v2
       with:
         # auto-update-conda: true
         python-version: ${{ matrix.python-version }}
@@ -288,4 +295,3 @@ jobs:
         name: "${{ matrix.os }}-conda"
         file: ./coverage.xml
         fail_ci_if_error: true
-

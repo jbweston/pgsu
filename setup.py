@@ -1,7 +1,8 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
+"""Setup script for pgsu python package"""
 from __future__ import absolute_import
-from setuptools import setup, find_packages
 import os
+from setuptools import setup, find_packages
 
 THIS_FOLDER = os.path.split(os.path.abspath(__file__))[0]
 
@@ -17,30 +18,28 @@ setup(
     author='AiiDA Team',
     author_email='aiidateam@gmail.com',
     classifiers=[
-        "License :: OSI Approved :: MIT License",
-        "Operating System :: POSIX :: Linux",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: Microsoft :: Windows",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: POSIX :: Linux',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: Microsoft :: Windows',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     license='MIT',
     packages=find_packages(),
     install_requires=[
         'psycopg2-binary>=2.8.3',
         'click',
+        'six',
         "enum34; python_version<'3.5'",
     ],
     extras_require={
         'testing': ['pytest', 'pgtest>=1.3.1', 'pytest-cov'],
         # note: pre-commit hooks require python3
-        "pre-commit": [
-            "pre-commit==1.18.3", "yapf==0.28.0", "prospector==1.2.0",
-            "pylint==2.4.4"
-        ]
+        'pre-commit': ['pre-commit==1.18.3', 'pylint~=2.5.0']
     },
-    entry_points={'console_scripts': ["pgsu=pgsu.cli:run"]})
+    entry_points={'console_scripts': ['pgsu=pgsu.cli:run']})

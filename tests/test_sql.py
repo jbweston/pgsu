@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Test executing SQL commands.
 
 Test creating/dropping users and databases.
@@ -6,11 +7,12 @@ from __future__ import absolute_import
 import os
 import sys
 from contextlib import contextmanager
-import conftest
-import psycopg2
 from io import StringIO
-from pgsu import PGSU, DEFAULT_DSN
 import six
+import psycopg2
+
+from pgsu import PGSU, DEFAULT_DSN
+import conftest
 
 
 def test_create_drop_user(user):  # pylint: disable=unused-argument
