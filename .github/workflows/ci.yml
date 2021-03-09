@@ -278,7 +278,7 @@ jobs:
       run: |
         conda install -y -c anaconda postgresql
         initdb -D test_db
-        pg_ctl -D test_db start
+        pg_ctl -D test_db -o "-d 5" start  # start with debugging
 
     - name: Install pgsu
       run: |

@@ -1,5 +1,6 @@
 [tool.pylint.format]
 max-line-length = 120
+max-args = 7
 
 [tool.pytest.ini_options]
 addopts = "--durations=0 --cov=pgsu"

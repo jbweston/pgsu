@@ -21,10 +21,15 @@ DEFAULT_DSN = {
     'database': 'template1',
 }
 
-# By default, try "sudo" only on Ubuntu
-DEFAULT_TRY_SUDO = platform.system(
-) == 'Linux' and 'Ubuntu' in platform.version()
-DEFAULT_UNIX_USER = 'postgres'
+# By default, try "sudo" only when 'postgres' user exists
+DEFAULT_POSTGRES_UNIX_USER = 'postgres'
+try:
+    import pwd
+    pwd.getpwnam(DEFAULT_POSTGRES_UNIX_USER)
+    DEFAULT_TRY_SUDO = True
+except (KeyError, ModuleNotFoundError):
+    # user not found or pwd module not found (=not Unix)
+    DEFAULT_TRY_SUDO = False
 
 LOGGER = logging.getLogger('pgsu')
 LOGGER.setLevel(logging.DEBUG)
@@ -63,7 +68,9 @@ class PGSU:
                  interactive=False,
                  quiet=True,
                  dsn=None,
-                 determine_setup=True):
+                 determine_setup=True,
+                 try_sudo=DEFAULT_TRY_SUDO,
+                 postgres_unix_user=DEFAULT_POSTGRES_UNIX_USER):
         """Store postgres connection info.
 
         :param interactive: use True for verdi commands
@@ -72,7 +79,9 @@ class PGSU:
             It is sufficient to provide only those values that deviate from the defaults.
         :param determine_setup: Whether to determine setup upon instantiation.
             You may set this to False and use the 'determine_setup()' method instead.
-        :param unix_user: UNIX user to try to "become", if connection via psycopg2 fails
+        :param try_sudo: If connection via psycopg2 fails, whether to try and use `sudo` to  become
+            the `postgres_unix_user` and run commands using passwordless `psql`.
+        :param postgres_unix_user: UNIX user to try to "become", if connection via psycopg2 fails
         """
         self.interactive = interactive
         if not quiet:
@@ -88,9 +97,8 @@ class PGSU:
         if dsn is not None:
             self.dsn.update(dsn)
 
-        # Used on Ubuntu only!
-        self.try_sudo = DEFAULT_TRY_SUDO
-        self.unix_user = DEFAULT_UNIX_USER
+        self.try_sudo = try_sudo
+        self.postgres_unix_user = postgres_unix_user
 
         if determine_setup:
             self.determine_setup()
@@ -136,7 +144,7 @@ class PGSU:
             # First try the host specified (works if 'host' has setting 'trust' in pg_hba.conf).
             # Then try local connection (works if 'local' has setting 'trust' in pg_hba.conf).
             # Then try 'host' localhost via TCP/IP.
-            for pg_host in unique_list([self.dsn.get('host'), None, 'localhost']):  # yapf: disable
+            for pg_host in unique_list([self.dsn.get('host'), None, 'localhost']):   # yapf: disable
                 dsn['host'] = pg_host
 
                 if _try_connect_psycopg(**dsn):
@@ -149,10 +157,10 @@ class PGSU:
         # Check if 'sudo' is available and try to become 'postgres'.
         if self.try_sudo:
             LOGGER.debug('Trying to connect by becoming the "%s" unix user...',
-                         self.unix_user)
+                         self.postgres_unix_user)
             if _sudo_exists():
                 dsn = self.dsn.copy()
-                dsn['user'] = self.unix_user
+                dsn['user'] = self.postgres_unix_user
 
                 if _try_su_psql(interactive=self.interactive, dsn=dsn):
                     self.dsn = dsn
@@ -161,7 +169,7 @@ class PGSU:
             else:
                 LOGGER.info(
                     'Could not find `sudo` to become the the "%s" unix user.',
-                    self.unix_user)
+                    self.postgres_unix_user)
 
         self.setup_fail_counter += 1
         return self._no_setup_detected()
@@ -181,7 +189,8 @@ class PGSU:
 
     @property
     def is_connected(self):
-        """Whether connection to PostgreSQL cluster has been established."""
+        """Whether successful way of connecting to PostgreSQL cluster has been determined.
+        """
         return self.connection_mode in (PostgresConnectionMode.PSYCOPG,
                                         PostgresConnectionMode.PSQL)
 
