@@ -6,7 +6,7 @@ jobs:
 
   pre-commit:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
@@ -17,15 +17,9 @@ jobs:
       with:
         python-version: 3.8
 
-    - name: Install system dependencies
-      run: |
-        sudo rm -f /etc/apt/sources.list.d/dotnetdev.list /etc/apt/sources.list.d/microsoft-prod.list
-        sudo apt update
-        sudo apt install libkrb5-dev ruby ruby-dev
-
     - name: Install python dependencies
       run: |
-        pip install -e .[pre-commit,testing]
+        pip install -e .[pre_commit,testing]
         pip freeze
 
     - name: Run pre-commit
@@ -40,7 +34,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.5, 3.9]
+        python-version: [3.6, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -76,14 +70,14 @@ jobs:
         file: ./coverage.xml
         fail_ci_if_error: true
 
-  ubuntu-apt-1604:
+  ubuntu-apt-1804:
     # ubuntu using postgresql installed via apt (+ pgtest)
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-18.04
     timeout-minutes: 5
 
     strategy:
       matrix:
-        python-version: [3.5]
+        python-version: [3.6]
 
     steps:
     - uses: actions/checkout@v2
@@ -97,9 +91,9 @@ jobs:
       run: |
         sudo rm -f /etc/apt/sources.list.d/dotnetdev.list /etc/apt/sources.list.d/microsoft-prod.list
         sudo apt update
-        sudo apt install postgresql-12
-        sudo cat /etc/postgresql/12/main/pg_hba.conf
-        sudo pg_ctlcluster 12 main start
+        sudo apt install postgresql-10
+        sudo cat /etc/postgresql/10/main/pg_hba.conf
+        sudo pg_ctlcluster 10 main start
 
     - name: Install pgsu
       run: |

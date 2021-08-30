@@ -250,16 +250,18 @@ def _execute_psyco(command, dsn):
     """
     import psycopg2  # pylint: disable=import-outside-toplevel
 
+    conn = None
     output = None
-    with psycopg2.connect(**dsn) as conn:
+    try:
+        conn = psycopg2.connect(**dsn)
         conn.autocommit = True
         with conn.cursor() as cursor:
             cursor.execute(command)
             if cursor.description is not None:
                 output = cursor.fetchall()
-
-    # see http://initd.org/psycopg/docs/usage.html#with-statement
-    conn.close()
+    finally:
+        if conn:
+            conn.close()
     return output
 
 
@@ -314,7 +316,7 @@ def _execute_su_psql(command, dsn, interactive=False, stderr=None):
 
     database = dsn.get('database')
     if database:
-        psql_option_str += '-d {}'.format(database)
+        psql_option_str += f'-d {database}'
 
     # to do: Forward password to psql; ignore host only when the password is None.  # pylint: disable=fixme
     # Note: There is currently no known postgresql setup that needs this, though
@@ -322,7 +324,7 @@ def _execute_su_psql(command, dsn, interactive=False, stderr=None):
 
     host = dsn.pop('host', 'localhost')
     if host and host != 'localhost':
-        psql_option_str += ' -h {}'.format(host)
+        psql_option_str += f' -h {host}'
     else:
         LOGGER.debug(
             "Found host 'localhost' but dropping '-h localhost' option for psql "
@@ -331,7 +333,7 @@ def _execute_su_psql(command, dsn, interactive=False, stderr=None):
 
     port = dsn.get('port')
     if port:
-        psql_option_str += ' -p {}'.format(port)
+        psql_option_str += f' -p {port}'
 
     # Note: This is *both* the UNIX user to become *and* the database user
     user = dsn.get('user')
@@ -382,7 +384,7 @@ def escape_for_bash(str_to_escape):
     string found below.
     """
     escaped_quotes = str_to_escape.replace("'", """'"'"'""")
-    return "'{}'".format(escaped_quotes)
+    return f"'{escaped_quotes}'"
 
 
 def unique_list(non_unique_list):

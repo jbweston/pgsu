@@ -14,6 +14,6 @@ GET_DBS_COMMAND = 'SELECT datname FROM pg_database'
 def run(query):
     """Execute SQL command as PostrgreSQL superuser."""
     pgsu = PGSU(interactive=True, quiet=False)
-    click.echo('Executing query: {}'.format(query))
+    click.echo(f'Executing query: {query}')
     dbs = pgsu.execute(query)
     click.echo(pprint.pformat(dbs))
