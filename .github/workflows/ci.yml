@@ -279,8 +279,8 @@ jobs:
       if: matrix.os == 'windows-2019'
       shell: bash -l {0}
       run: |
-        createuser -s postgres
-        createuser -s runneradmin
+        createuser -U runneradmin -s postgres
+        createuser -U runneradmin -s runneradmin
 
     - name: Install pgsu
       run: |
