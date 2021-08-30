@@ -236,6 +236,7 @@ jobs:
       #
       #    # note: I tested this locally with *only* the homebrew postgres server running and it worked.
       #    # no idea why this does not work on github actions
+      #    # Edit: It seems homebrew postgresql does not create the postgres user automatically.
       #    - name: Run test suite
       #      run: |
       #        brew services start postgresql
@@ -273,6 +274,13 @@ jobs:
         conda install -y -c anaconda postgresql
         initdb -D test_db
         pg_ctl -D test_db -o "-d 5" start  # start with debugging
+
+    - name: Create postgres superuser on Windows
+      if: matrix.os == 'windows-2019'
+      shell: bash -l {0}
+      run: |
+        createuser -s postgres
+        createuser -s runneradmin
 
     - name: Install pgsu
       run: |
