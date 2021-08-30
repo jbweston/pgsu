@@ -6,20 +6,10 @@
 import logging
 import traceback
 import os
-import platform
 from enum import IntEnum
 import subprocess
 
 import click
-
-DEFAULT_DSN = {
-    'host':
-    None,  # 'localhost' causes psql to connect via method 'host' instead of 'local'
-    'port': 5432,
-    'user': 'postgres',
-    'password': None,
-    'database': 'template1',
-}
 
 # By default, try "sudo" only when 'postgres' user exists
 DEFAULT_POSTGRES_UNIX_USER = 'postgres'
@@ -30,6 +20,19 @@ try:
 except (KeyError, ModuleNotFoundError):
     # user not found or pwd module not found (=not Unix)
     DEFAULT_TRY_SUDO = False
+
+DEFAULT_POSTGRES_SUPERUSER = 'postgres'
+if os.name == 'nt':  # on windows
+    DEFAULT_POSTGRES_SUPERUSER = os.getlogin()
+
+DEFAULT_DSN = {
+    'host':
+    None,  # 'localhost' causes psql to connect via method 'host' instead of 'local'
+    'port': 5432,
+    'user': DEFAULT_POSTGRES_SUPERUSER,
+    'password': None,
+    'database': 'template1',
+}
 
 LOGGER = logging.getLogger('pgsu')
 LOGGER.setLevel(logging.DEBUG)

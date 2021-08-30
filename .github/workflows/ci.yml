@@ -275,12 +275,11 @@ jobs:
         initdb -D test_db
         pg_ctl -D test_db -o "-d 5" start  # start with debugging
 
-    - name: Create postgres superuser on Windows
-      if: matrix.os == 'windows-2019'
-      shell: bash -l {0}
-      run: |
-        createuser -U runneradmin -s postgres
-        createuser -U runneradmin -s runneradmin
+    # - name: Create postgres superuser on Windows
+    #   if: matrix.os == 'windows-2019'
+    #   shell: bash -l {0}
+    #   run: |
+    #     createuser -U runneradmin -s postgres
 
     - name: Install pgsu
       run: |
