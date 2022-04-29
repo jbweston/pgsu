@@ -288,9 +288,7 @@ def _try_su_psql(interactive, dsn):
     :return: True if successful, False otherwise
     """
     try:
-        _execute_su_psql(r'\q',
-                         interactive=interactive,
-                         dsn=dsn)
+        _execute_su_psql(r'\q', interactive=interactive, dsn=dsn)
         return True
     except subprocess.CalledProcessError:
         LOGGER.debug('Failed to run "psql" in a subprocess as user %s',
@@ -357,7 +355,11 @@ def _execute_su_psql(command, dsn, interactive=False):
     # This block implements 'result = check_output(sudo_su_psql, encoding="utf-8")',
     # except that we capture stderr and log it.
     proc = subprocess.run(
-        sudo_su_psql, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="utf-8",
+        sudo_su_psql,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding='utf-8',
+        check=False,
     )
     if proc.stderr:
         LOGGER.warning(proc.stderr)
